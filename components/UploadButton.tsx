@@ -9,29 +9,29 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-async function uploadImageToSupabase(file: File) {
-  const bucket = 'tiles'
+async function uploadImageToSupabase(file: File, bucket: string) {
   const fileName = `${Date.now()}_${file.name}`
-  const { error } = await supabase.storage.from(bucket).upload(fileName, file)
+  const { error } = await supabase.storage.from(bucket).upload(fileName, file, { upsert: true })
   if (error) throw error
   const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(fileName)
   return publicData.publicUrl
 }
 
 interface UploadButtonProps {
-  onUpload: (file: File, localUrl: string) => void
+  onUpload: (file: File, supabaseUrl: string) => void
   label?: string
   variant?: 'primary' | 'secondary'
+  bucket?: 'tiles' | 'homes'
 }
 
-export default function UploadButton({ onUpload, label = 'Upload', variant = 'primary' }: UploadButtonProps) {
+export default function UploadButton({ onUpload, label = 'Upload', variant = 'primary', bucket = 'tiles' }: UploadButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file && file.type.startsWith('image/')) {
       try {
-        const publicUrl = await uploadImageToSupabase(file)
+        const publicUrl = await uploadImageToSupabase(file, bucket)
         onUpload(file, publicUrl)
       } catch (err) {
         console.error('Upload failed', err)

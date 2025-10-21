@@ -11,7 +11,7 @@ export async function uploadImageToSupabase(file: File, folder: string) {
   const fileName = `${Date.now()}_${file.name}`
   const { data, error } = await supabase.storage
     .from(folder)
-    .upload(fileName, file)
+    .upload(fileName, file, { upsert: true })
   if (error) throw error
   const { data: publicData } = supabase.storage.from(folder).getPublicUrl(fileName)
   return publicData.publicUrl

@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { mockStore, MockHome } from '@/lib/mockStore'
-import { uploadImageToSupabase } from '@/lib/api'
 import Navbar from '@/components/Navbar'
 import UploadButton from '@/components/UploadButton'
 import { Camera, Check } from 'lucide-react'
@@ -19,19 +18,12 @@ export default function SelectHomePage() {
     }
   }, [router])
 
-  const handleUpload = async (file: File, localUrl: string) => {
-    try {
-      console.log('Uploading home to Supabase...')
-      const supabaseUrl = await uploadImageToSupabase(file, 'homes')
-      console.log('Home uploaded to Supabase:', supabaseUrl)
-      const newHome = mockStore.addHome(supabaseUrl)
-      console.log('New home created:', newHome)
-      setHomes(mockStore.getHomes())
-      setSelectedId(newHome.id)
-    } catch (error) {
-      console.error('Failed to upload home:', error)
-      alert('Failed to upload image to Supabase. Please try again.')
-    }
+  const handleUpload = (file: File, supabaseUrl: string) => {
+    console.log('Home uploaded to Supabase:', supabaseUrl)
+    const newHome = mockStore.addHome(supabaseUrl)
+    console.log('New home created:', newHome)
+    setHomes(mockStore.getHomes())
+    setSelectedId(newHome.id)
   }
 
   const handleConfirm = () => {
@@ -56,7 +48,7 @@ export default function SelectHomePage() {
             <Camera className="w-4 h-4" />
             <span className="whitespace-nowrap">Camera (Phase 2)</span>
           </button>
-          <UploadButton onUpload={handleUpload} label="Upload" variant="secondary" />
+          <UploadButton onUpload={handleUpload} label="Upload" variant="secondary" bucket="homes" />
         </div>
 
         {homes.length === 0 ? (
@@ -75,7 +67,7 @@ export default function SelectHomePage() {
                 }`}
               >
                 <img
-                  src={home.localPreviewUrl}
+                  src={home.imageUrl}
                   alt="Home"
                   className="w-full h-full object-cover"
                 />

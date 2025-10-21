@@ -4,7 +4,7 @@ interface ImageGridProps {
   items: Array<{
     id: string
     name?: string
-    localPreviewUrl: string
+    imageUrl: string
   }>
   onItemClick: (id: string) => void
 }
@@ -19,7 +19,7 @@ export default function ImageGrid({ items, onItemClick }: ImageGridProps) {
           className="group relative aspect-square rounded-lg overflow-hidden bg-gray-100 hover:opacity-90 transition-opacity"
         >
           <img
-            src={item.localPreviewUrl}
+            src={item.imageUrl}
             alt={item.name || 'Image'}
             className="w-full h-full object-cover"
           />

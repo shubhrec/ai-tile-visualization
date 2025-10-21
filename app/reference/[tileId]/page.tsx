@@ -44,7 +44,7 @@ export default function ReferencePage() {
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
             <img
-              src={tile.localPreviewUrl}
+              src={tile.imageUrl}
               alt={tile.name}
               className="w-full sm:w-48 md:w-64 h-48 sm:h-48 md:h-64 object-cover rounded-lg shadow-lg"
             />

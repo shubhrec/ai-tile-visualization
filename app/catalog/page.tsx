@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { mockStore } from '@/lib/mockStore'
-import { uploadImageToSupabase } from '@/lib/api'
 import Navbar from '@/components/Navbar'
 import ImageGrid from '@/components/ImageGrid'
 import UploadButton from '@/components/UploadButton'
@@ -13,9 +12,7 @@ export default function CatalogPage() {
   const [tiles, setTiles] = useState(mockStore.getTiles())
   const [showUpload, setShowUpload] = useState(false)
   const [tileName, setTileName] = useState('')
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState('')
-  const [isUploading, setIsUploading] = useState(false)
+  const [uploadedUrl, setUploadedUrl] = useState('')
 
   useEffect(() => {
     if (!mockStore.isAuthenticated()) {
@@ -27,29 +24,18 @@ export default function CatalogPage() {
     router.push(`/reference/${id}`)
   }
 
-  const handleUpload = (file: File, localUrl: string) => {
-    setUploadedFile(file)
-    setPreviewUrl(localUrl)
+  const handleUpload = (file: File, supabaseUrl: string) => {
+    setUploadedUrl(supabaseUrl)
     setShowUpload(true)
   }
 
-  const handleSaveTile = async () => {
-    if (tileName.trim() && uploadedFile) {
-      try {
-        setIsUploading(true)
-        const supabaseUrl = await uploadImageToSupabase(uploadedFile, 'tiles')
-        mockStore.addTile(tileName, supabaseUrl)
-        setTiles(mockStore.getTiles())
-        setShowUpload(false)
-        setTileName('')
-        setUploadedFile(null)
-        setPreviewUrl('')
-      } catch (error) {
-        console.error('Failed to upload tile:', error)
-        alert('Failed to upload image to Supabase. Please try again.')
-      } finally {
-        setIsUploading(false)
-      }
+  const handleSaveTile = () => {
+    if (tileName.trim() && uploadedUrl) {
+      mockStore.addTile(tileName, uploadedUrl)
+      setTiles(mockStore.getTiles())
+      setShowUpload(false)
+      setTileName('')
+      setUploadedUrl('')
     }
   }
 
@@ -67,7 +53,7 @@ export default function CatalogPage() {
           <div className="mb-4 sm:mb-6 p-3 sm:p-4 border rounded-lg bg-white">
             <h2 className="text-base sm:text-lg font-semibold mb-3">New Tile</h2>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start">
-              <img src={previewUrl} alt="Preview" className="w-full sm:w-32 h-32 object-cover rounded-lg" />
+              <img src={uploadedUrl} alt="Preview" className="w-full sm:w-32 h-32 object-cover rounded-lg" />
               <div className="flex-1 w-full">
                 <input
                   type="text"
@@ -79,20 +65,17 @@ export default function CatalogPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={handleSaveTile}
-                    disabled={isUploading}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    {isUploading ? 'Uploading...' : 'Save Tile'}
+                    Save Tile
                   </button>
                   <button
                     onClick={() => {
                       setShowUpload(false)
                       setTileName('')
-                      setUploadedFile(null)
-                      setPreviewUrl('')
+                      setUploadedUrl('')
                     }}
-                    disabled={isUploading}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                   >
                     Cancel
                   </button>

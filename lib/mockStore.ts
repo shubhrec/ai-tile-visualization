@@ -8,13 +8,13 @@ export interface MockUser {
 export interface MockTile {
   id: string
   name: string
-  localPreviewUrl: string
+  imageUrl: string
   createdAt: Date
 }
 
 export interface MockHome {
   id: string
-  localPreviewUrl: string
+  imageUrl: string
   createdAt: Date
 }
 
@@ -45,25 +45,25 @@ class MockStore {
       {
         id: '1',
         name: 'Marble White',
-        localPreviewUrl: 'https://images.pexels.com/photos/1323550/pexels-photo-1323550.jpeg?auto=compress&cs=tinysrgb&w=400',
+        imageUrl: 'https://images.pexels.com/photos/1323550/pexels-photo-1323550.jpeg?auto=compress&cs=tinysrgb&w=400',
         createdAt: new Date('2024-01-15')
       },
       {
         id: '2',
         name: 'Black Slate',
-        localPreviewUrl: 'https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg?auto=compress&cs=tinysrgb&w=400',
+        imageUrl: 'https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg?auto=compress&cs=tinysrgb&w=400',
         createdAt: new Date('2024-01-16')
       },
       {
         id: '3',
         name: 'Terracotta',
-        localPreviewUrl: 'https://images.pexels.com/photos/2102587/pexels-photo-2102587.jpeg?auto=compress&cs=tinysrgb&w=400',
+        imageUrl: 'https://images.pexels.com/photos/2102587/pexels-photo-2102587.jpeg?auto=compress&cs=tinysrgb&w=400',
         createdAt: new Date('2024-01-17')
       },
       {
         id: '4',
         name: 'Blue Ceramic',
-        localPreviewUrl: 'https://images.pexels.com/photos/1358900/pexels-photo-1358900.jpeg?auto=compress&cs=tinysrgb&w=400',
+        imageUrl: 'https://images.pexels.com/photos/1358900/pexels-photo-1358900.jpeg?auto=compress&cs=tinysrgb&w=400',
         createdAt: new Date('2024-01-18')
       }
     ]
@@ -71,12 +71,12 @@ class MockStore {
     this.mockHomes = [
       {
         id: 'h1',
-        localPreviewUrl: 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400',
+        imageUrl: 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400',
         createdAt: new Date('2024-01-20')
       },
       {
         id: 'h2',
-        localPreviewUrl: 'https://images.pexels.com/photos/2121121/pexels-photo-2121121.jpeg?auto=compress&cs=tinysrgb&w=400',
+        imageUrl: 'https://images.pexels.com/photos/2121121/pexels-photo-2121121.jpeg?auto=compress&cs=tinysrgb&w=400',
         createdAt: new Date('2024-01-21')
       }
     ]
@@ -112,11 +112,11 @@ class MockStore {
     return this.mockTiles.find(t => t.id === id)
   }
 
-  addTile(name: string, localPreviewUrl: string): MockTile {
+  addTile(name: string, imageUrl: string): MockTile {
     const newTile: MockTile = {
       id: `tile-${Date.now()}`,
       name,
-      localPreviewUrl,
+      imageUrl,
       createdAt: new Date()
     }
     this.mockTiles.push(newTile)
@@ -127,10 +127,10 @@ class MockStore {
     return this.mockHomes.slice(-10)
   }
 
-  addHome(localPreviewUrl: string): MockHome {
+  addHome(imageUrl: string): MockHome {
     const newHome: MockHome = {
       id: `home-${Date.now()}`,
-      localPreviewUrl,
+      imageUrl,
       createdAt: new Date()
     }
     this.mockHomes.push(newHome)
@@ -154,8 +154,8 @@ class MockStore {
     const tile = tileId ? this.getTileById(tileId) : null
     const home = homeId ? this.mockHomes.find(h => h.id === homeId) : null
 
-    const tileUrl = tile?.localPreviewUrl || ''
-    const homeUrl = home?.localPreviewUrl || ''
+    const tileUrl = tile?.imageUrl || ''
+    const homeUrl = home?.imageUrl || ''
 
     console.log('Generating image with URLs:', { tileUrl, homeUrl, prompt })
 

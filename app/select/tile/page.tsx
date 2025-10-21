@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { mockStore } from '@/lib/mockStore'
-import { uploadImageToSupabase } from '@/lib/api'
 import Navbar from '@/components/Navbar'
 import ImageGrid from '@/components/ImageGrid'
 import UploadButton from '@/components/UploadButton'
@@ -20,19 +19,12 @@ export default function SelectTilePage() {
     }
   }, [router])
 
-  const handleUpload = async (file: File, localUrl: string) => {
-    try {
-      console.log('Uploading tile to Supabase...')
-      const supabaseUrl = await uploadImageToSupabase(file, 'tiles')
-      console.log('Tile uploaded to Supabase:', supabaseUrl)
-      const newTile = mockStore.addTile(file.name, supabaseUrl)
-      console.log('New tile created:', newTile)
-      setTiles(mockStore.getTiles())
-      setSelectedId(newTile.id)
-    } catch (error) {
-      console.error('Failed to upload tile:', error)
-      alert('Failed to upload image to Supabase. Please try again.')
-    }
+  const handleUpload = (file: File, supabaseUrl: string) => {
+    console.log('Tile uploaded to Supabase:', supabaseUrl)
+    const newTile = mockStore.addTile(file.name, supabaseUrl)
+    console.log('New tile created:', newTile)
+    setTiles(mockStore.getTiles())
+    setSelectedId(newTile.id)
   }
 
   const handleConfirm = () => {

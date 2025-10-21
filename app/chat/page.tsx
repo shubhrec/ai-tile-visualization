@@ -94,7 +94,7 @@ export default function ChatPage() {
               {selectedTile && (
                 <div className="flex flex-col items-center gap-1 sm:gap-2">
                   <img
-                    src={selectedTile.localPreviewUrl}
+                    src={selectedTile.imageUrl}
                     alt={selectedTile.name}
                     className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg border-2 border-blue-500"
                   />
@@ -105,7 +105,7 @@ export default function ChatPage() {
               {selectedHome && (
                 <div className="flex flex-col items-center gap-1 sm:gap-2">
                   <img
-                    src={selectedHome.localPreviewUrl}
+                    src={selectedHome.imageUrl}
                     alt="Home"
                     className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg border-2 border-green-500"
                   />
