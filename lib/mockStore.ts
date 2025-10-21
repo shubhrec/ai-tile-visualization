@@ -157,6 +157,8 @@ class MockStore {
     const tileUrl = tile?.localPreviewUrl || ''
     const homeUrl = home?.localPreviewUrl || ''
 
+    console.log('Generating image with URLs:', { tileUrl, homeUrl, prompt })
+
     try {
       const result = await apiGenerateImage(tileUrl, homeUrl, prompt)
 

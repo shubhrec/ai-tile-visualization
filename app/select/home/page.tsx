@@ -21,8 +21,11 @@ export default function SelectHomePage() {
 
   const handleUpload = async (file: File, localUrl: string) => {
     try {
+      console.log('Uploading home to Supabase...')
       const supabaseUrl = await uploadImageToSupabase(file, 'homes')
+      console.log('Home uploaded to Supabase:', supabaseUrl)
       const newHome = mockStore.addHome(supabaseUrl)
+      console.log('New home created:', newHome)
       setHomes(mockStore.getHomes())
       setSelectedId(newHome.id)
     } catch (error) {

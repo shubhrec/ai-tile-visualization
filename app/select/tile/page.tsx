@@ -22,8 +22,11 @@ export default function SelectTilePage() {
 
   const handleUpload = async (file: File, localUrl: string) => {
     try {
+      console.log('Uploading tile to Supabase...')
       const supabaseUrl = await uploadImageToSupabase(file, 'tiles')
+      console.log('Tile uploaded to Supabase:', supabaseUrl)
       const newTile = mockStore.addTile(file.name, supabaseUrl)
+      console.log('New tile created:', newTile)
       setTiles(mockStore.getTiles())
       setSelectedId(newTile.id)
     } catch (error) {
