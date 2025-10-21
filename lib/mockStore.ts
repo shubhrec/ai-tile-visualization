@@ -166,7 +166,7 @@ class MockStore {
           tileId,
           homeId,
           prompt,
-          imageUrl: `http://localhost:8000/${result.image_path}`,
+          imageUrl: result.image_url,
           saved: false,
           createdAt: new Date()
         }
