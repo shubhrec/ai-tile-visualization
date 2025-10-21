@@ -2,23 +2,10 @@
 
 import { useRef } from 'react'
 import { Upload } from 'lucide-react'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
-async function uploadImageToSupabase(file: File, bucket: string) {
-  const fileName = `${Date.now()}_${file.name}`
-  const { error } = await supabase.storage.from(bucket).upload(fileName, file, { upsert: true })
-  if (error) throw error
-  const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(fileName)
-  return publicData.publicUrl
-}
+import { uploadImage } from '@/lib/api'
 
 interface UploadButtonProps {
-  onUpload: (file: File, supabaseUrl: string) => void
+  onUpload: (file: File, url: string) => void
   label?: string
   variant?: 'primary' | 'secondary'
   bucket?: 'tiles' | 'homes'
@@ -31,11 +18,11 @@ export default function UploadButton({ onUpload, label = 'Upload', variant = 'pr
     const file = e.target.files?.[0]
     if (file && file.type.startsWith('image/')) {
       try {
-        const publicUrl = await uploadImageToSupabase(file, bucket)
-        onUpload(file, publicUrl)
+        const url = await uploadImage(file, bucket)
+        onUpload(file, url)
       } catch (err) {
         console.error('Upload failed', err)
-        alert('Upload failed — check your Supabase keys or bucket name.')
+        alert('Upload failed')
       }
     }
   }
