@@ -51,9 +51,15 @@ export default function ChatPage() {
     const selectedTileId = tileIdFromUrl || mockStore.getSelectedTile()
     const selectedHomeId = mockStore.getSelectedHome()
 
-    const newMessage = await mockStore.generateImage(selectedTileId, selectedHomeId, prompt)
-    setMessages(mockStore.getGeneratedMessages())
-    setIsGenerating(false)
+    try {
+      const newMessage = await mockStore.generateImage(selectedTileId, selectedHomeId, prompt)
+      setMessages(mockStore.getGeneratedMessages())
+    } catch (error) {
+      console.error('Generation failed:', error)
+      alert('Failed to generate image. Make sure the backend is running on http://localhost:8000')
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const handleSelectionsChange = () => {

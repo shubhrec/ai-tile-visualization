@@ -149,27 +149,37 @@ class MockStore {
   }
 
   async generateImage(tileId: string | null, homeId: string | null, prompt: string): Promise<MockGeneratedMessage> {
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    const { generateImage: apiGenerateImage } = await import('./api')
 
-    const mockImageUrls = [
-      'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=600',
-      'https://images.pexels.com/photos/2121121/pexels-photo-2121121.jpeg?auto=compress&cs=tinysrgb&w=600',
-      'https://images.pexels.com/photos/1643389/pexels-photo-1643389.jpeg?auto=compress&cs=tinysrgb&w=600',
-      'https://images.pexels.com/photos/276724/pexels-photo-276724.jpeg?auto=compress&cs=tinysrgb&w=600'
-    ]
+    const tile = tileId ? this.getTileById(tileId) : null
+    const home = homeId ? this.mockHomes.find(h => h.id === homeId) : null
 
-    const newMessage: MockGeneratedMessage = {
-      id: `gen-${Date.now()}`,
-      tileId,
-      homeId,
-      prompt,
-      imageUrl: mockImageUrls[Math.floor(Math.random() * mockImageUrls.length)],
-      saved: false,
-      createdAt: new Date()
+    const tileUrl = tile?.localPreviewUrl || ''
+    const homeUrl = home?.localPreviewUrl || ''
+
+    try {
+      const result = await apiGenerateImage(tileUrl, homeUrl, prompt)
+
+      if (result.success) {
+        const newMessage: MockGeneratedMessage = {
+          id: `gen-${Date.now()}`,
+          tileId,
+          homeId,
+          prompt,
+          imageUrl: `http://localhost:8000/${result.image_path}`,
+          saved: false,
+          createdAt: new Date()
+        }
+
+        this.mockGeneratedMessages.push(newMessage)
+        return newMessage
+      } else {
+        throw new Error(result.error || 'Image generation failed')
+      }
+    } catch (error) {
+      console.error('Backend error:', error)
+      throw error
     }
-
-    this.mockGeneratedMessages.push(newMessage)
-    return newMessage
   }
 
   saveGenerated(id: string): void {
