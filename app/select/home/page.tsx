@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { mockStore, MockHome } from '@/lib/mockStore'
+import { uploadImageToSupabase } from '@/lib/api'
 import Navbar from '@/components/Navbar'
 import UploadButton from '@/components/UploadButton'
 import { Camera, Check } from 'lucide-react'
@@ -18,10 +19,16 @@ export default function SelectHomePage() {
     }
   }, [router])
 
-  const handleUpload = (file: File, localUrl: string) => {
-    const newHome = mockStore.addHome(localUrl)
-    setHomes(mockStore.getHomes())
-    setSelectedId(newHome.id)
+  const handleUpload = async (file: File, localUrl: string) => {
+    try {
+      const supabaseUrl = await uploadImageToSupabase(file, 'homes')
+      const newHome = mockStore.addHome(supabaseUrl)
+      setHomes(mockStore.getHomes())
+      setSelectedId(newHome.id)
+    } catch (error) {
+      console.error('Failed to upload home:', error)
+      alert('Failed to upload image to Supabase. Please try again.')
+    }
   }
 
   const handleConfirm = () => {
