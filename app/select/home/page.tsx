@@ -2,30 +2,71 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { mockStore, MockHome } from '@/lib/mockStore'
+import { secureFetch } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import UploadButton from '@/components/UploadButton'
 import BackButton from '@/components/BackButton'
 import { Camera, Check } from 'lucide-react'
+import { toast } from 'sonner'
+
+interface Home {
+  id: string
+  name: string
+  image_url: string
+  created_at: string
+}
 
 export default function SelectHomePage() {
   useAuth()
   const router = useRouter()
-  const [homes, setHomes] = useState<MockHome[]>(mockStore.getHomes())
-  const [selectedId, setSelectedId] = useState<string | null>(mockStore.getSelectedHome())
+  const [homes, setHomes] = useState<Home[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  const handleUpload = (file: File, supabaseUrl: string) => {
-    console.log('Home uploaded to Supabase:', supabaseUrl)
-    const newHome = mockStore.addHome(supabaseUrl)
-    console.log('New home created:', newHome)
-    setHomes(mockStore.getHomes())
-    setSelectedId(newHome.id)
+  useEffect(() => {
+    loadHomes()
+    const savedId = sessionStorage.getItem('selectedHomeId')
+    if (savedId) {
+      setSelectedId(savedId)
+    }
+  }, [])
+
+  async function loadHomes() {
+    try {
+      const res = await secureFetch('/api/homes')
+      const data = await res.json()
+      setHomes(data.homes || [])
+    } catch (err) {
+      console.error('Failed to fetch homes', err)
+      toast.error('Failed to load homes')
+    }
+  }
+
+  async function handleUpload(file: File, url: string) {
+    try {
+      const res = await secureFetch('/api/homes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: url, name: file.name }),
+      })
+      const data = await res.json()
+
+      if (data.success && data.home) {
+        setHomes(prev => [data.home, ...prev])
+        setSelectedId(data.home.id)
+        toast.success('Home added successfully')
+      } else {
+        toast.error('Failed to save home')
+      }
+    } catch (err) {
+      console.error('Upload failed', err)
+      toast.error('Upload failed')
+    }
   }
 
   const handleConfirm = () => {
     if (selectedId) {
-      mockStore.setSelectedHome(selectedId)
+      sessionStorage.setItem('selectedHomeId', selectedId)
       router.back()
     }
   }
@@ -67,8 +108,8 @@ export default function SelectHomePage() {
                 }`}
               >
                 <img
-                  src={home.imageUrl}
-                  alt="Home"
+                  src={home.image_url}
+                  alt={home.name || 'Home'}
                   className="w-full h-full object-cover"
                 />
                 {selectedId === home.id && (
