@@ -56,12 +56,20 @@ export async function listImages(bucket: string) {
   return data.files || []
 }
 
-export async function generateImage(tileUrl: string, homeUrl: string, prompt: string) {
+export async function generateImage(
+  tileId: string,
+  tileUrl: string,
+  homeId: string,
+  homeUrl: string,
+  prompt: string
+) {
   const res = await secureFetch(`/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      tile_id: tileId,
       tile_url: tileUrl,
+      home_id: homeId,
       home_url: homeUrl,
       prompt
     }),

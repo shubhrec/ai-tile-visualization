@@ -23,43 +23,73 @@ export default function ChatPage() {
     image_url: string
   }
 
+  interface Home {
+    id: string
+    name: string
+    image_url: string
+    created_at: string
+  }
+
   const [messages, setMessages] = useState<MockGeneratedMessage[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [selectedImage, setSelectedImage] = useState<MockGeneratedMessage | null>(null)
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null)
-  const [selectedHome, setSelectedHome] = useState(mockStore.getSelectedHome() ? mockStore.getHomes().find(h => h.id === mockStore.getSelectedHome()) : null)
+  const [selectedHome, setSelectedHome] = useState<Home | null>(null)
+  const [homes, setHomes] = useState<Home[]>([])
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('selectedTile')
-    if (stored) {
-      try {
-        const tile = JSON.parse(stored)
-        setSelectedTile(tile)
-      } catch (err) {
-        console.error('Failed to parse selectedTile from sessionStorage', err)
+    async function loadData() {
+      const stored = sessionStorage.getItem('selectedTile')
+      if (stored) {
+        try {
+          const tile = JSON.parse(stored)
+          setSelectedTile(tile)
+        } catch (err) {
+          console.error('Failed to parse selectedTile from sessionStorage', err)
+        }
       }
-    }
 
-    const storedHomeId = mockStore.getSelectedHome()
-    if (storedHomeId) {
-      setSelectedHome(mockStore.getHomes().find(h => h.id === storedHomeId) || null)
-    }
+      try {
+        const { secureFetch } = await import('@/lib/api')
+        const res = await secureFetch('/api/homes')
+        const data = await res.json()
+        setHomes(data.homes || [])
 
-    setMessages(mockStore.getGeneratedMessages())
+        const storedHomeId = mockStore.getSelectedHome()
+        if (storedHomeId && data.homes) {
+          const home = data.homes.find((h: Home) => h.id === storedHomeId)
+          setSelectedHome(home || null)
+        }
+      } catch (err) {
+        console.error('Failed to load homes', err)
+      }
+
+      setMessages(mockStore.getGeneratedMessages())
+    }
+    loadData()
   }, [tileIdFromUrl])
 
   const handleGenerate = async (prompt: string) => {
-    if (!selectedTile) {
-      toast.error('Please select a tile first')
+    if (!selectedTile || !selectedTile.id || !selectedTile.image_url) {
+      toast.error('Missing tile information')
+      return
+    }
+
+    if (!selectedHome || !selectedHome.id || !selectedHome.image_url) {
+      toast.error('Please select or upload a home image first')
       return
     }
 
     setIsGenerating(true)
 
-    const selectedHomeId = mockStore.getSelectedHome()
-
     try {
-      const newMessage = await mockStore.generateImage(selectedTile.id, selectedHomeId, prompt)
+      const newMessage = await mockStore.generateImage(
+        selectedTile.id,
+        selectedTile.image_url,
+        selectedHome.id,
+        selectedHome.image_url,
+        prompt
+      )
       setMessages(mockStore.getGeneratedMessages())
       toast.success('Image generated successfully!')
     } catch (error) {
@@ -70,7 +100,7 @@ export default function ChatPage() {
     }
   }
 
-  const handleSelectionsChange = () => {
+  const handleSelectionsChange = async () => {
     const stored = sessionStorage.getItem('selectedTile')
     if (stored) {
       try {
@@ -82,7 +112,10 @@ export default function ChatPage() {
     }
 
     const storedHomeId = mockStore.getSelectedHome()
-    setSelectedHome(storedHomeId ? mockStore.getHomes().find(h => h.id === storedHomeId) || null : null)
+    if (storedHomeId && homes.length > 0) {
+      const home = homes.find(h => h.id === storedHomeId)
+      setSelectedHome(home || null)
+    }
   }
 
   const handleSave = (id: string) => {
@@ -123,7 +156,7 @@ export default function ChatPage() {
               {selectedHome && (
                 <div className="flex flex-col items-center gap-1 sm:gap-2">
                   <img
-                    src={selectedHome.imageUrl}
+                    src={selectedHome.image_url}
                     alt="Home"
                     className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg border-2 border-green-500"
                   />
