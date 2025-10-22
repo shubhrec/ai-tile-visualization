@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { mockStore, MockGeneratedMessage } from '@/lib/mockStore'
+import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import ChatMessage from '@/components/ChatMessage'
 import GenerateBar from '@/components/GenerateBar'
@@ -11,6 +12,7 @@ import BackButton from '@/components/BackButton'
 import { toast } from 'sonner'
 
 export default function ChatPage() {
+  useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const tileIdFromUrl = searchParams.get('tileId')
@@ -22,10 +24,6 @@ export default function ChatPage() {
   const [selectedHome, setSelectedHome] = useState(mockStore.getSelectedHome() ? mockStore.getHomes().find(h => h.id === mockStore.getSelectedHome()) : null)
 
   useEffect(() => {
-    if (!mockStore.isAuthenticated()) {
-      router.push('/login')
-      return
-    }
 
     if (tileIdFromUrl) {
       mockStore.setSelectedTile(tileIdFromUrl)

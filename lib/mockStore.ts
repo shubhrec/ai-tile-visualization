@@ -29,7 +29,6 @@ export interface MockGeneratedMessage {
 }
 
 class MockStore {
-  private currentUser: MockUser | null = null
   private mockTiles: MockTile[] = []
   private mockHomes: MockHome[] = []
   private mockGeneratedMessages: MockGeneratedMessage[] = []
@@ -84,25 +83,6 @@ class MockStore {
     this.mockGeneratedMessages = []
   }
 
-  login(email: string, password: string): boolean {
-    if (email && password) {
-      this.currentUser = { id: 'mock-user-1', email }
-      return true
-    }
-    return false
-  }
-
-  logout() {
-    this.currentUser = null
-  }
-
-  getCurrentUser(): MockUser | null {
-    return this.currentUser
-  }
-
-  isAuthenticated(): boolean {
-    return this.currentUser !== null
-  }
 
   getTiles(): MockTile[] {
     return this.mockTiles

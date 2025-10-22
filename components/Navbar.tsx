@@ -2,14 +2,17 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { mockStore } from '@/lib/mockStore'
+import { supabase } from '@/lib/supabaseClient'
 import { LogOut } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function Navbar() {
   const router = useRouter()
 
-  const handleLogout = () => {
-    mockStore.logout()
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    localStorage.removeItem('token')
+    toast.success('Logged out successfully')
     router.push('/login')
   }
 

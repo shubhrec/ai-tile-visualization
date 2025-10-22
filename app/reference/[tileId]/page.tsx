@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { mockStore, MockGeneratedMessage } from '@/lib/mockStore'
+import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import Modal from '@/components/Modal'
 import BackButton from '@/components/BackButton'
 import { Sparkles } from 'lucide-react'
 
 export default function ReferencePage() {
+  useAuth()
   const params = useParams()
   const router = useRouter()
   const tileId = params.tileId as string
@@ -18,10 +20,6 @@ export default function ReferencePage() {
   const [selectedImage, setSelectedImage] = useState<MockGeneratedMessage | null>(null)
 
   useEffect(() => {
-    if (!mockStore.isAuthenticated()) {
-      router.push('/login')
-      return
-    }
 
     if (!tile) {
       router.push('/catalog')

@@ -3,23 +3,19 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { mockStore } from '@/lib/mockStore'
+import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import ImageGrid from '@/components/ImageGrid'
 import UploadButton from '@/components/UploadButton'
 import BackButton from '@/components/BackButton'
 
 export default function CatalogPage() {
+  useAuth()
   const router = useRouter()
   const [tiles, setTiles] = useState(mockStore.getTiles())
   const [showUpload, setShowUpload] = useState(false)
   const [tileName, setTileName] = useState('')
   const [uploadedUrl, setUploadedUrl] = useState('')
-
-  useEffect(() => {
-    if (!mockStore.isAuthenticated()) {
-      router.push('/login')
-    }
-  }, [router])
 
   const handleTileClick = (id: string) => {
     router.push(`/reference/${id}`)

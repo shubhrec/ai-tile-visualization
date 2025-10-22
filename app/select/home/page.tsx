@@ -3,21 +3,17 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { mockStore, MockHome } from '@/lib/mockStore'
+import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import UploadButton from '@/components/UploadButton'
 import BackButton from '@/components/BackButton'
 import { Camera, Check } from 'lucide-react'
 
 export default function SelectHomePage() {
+  useAuth()
   const router = useRouter()
   const [homes, setHomes] = useState<MockHome[]>(mockStore.getHomes())
   const [selectedId, setSelectedId] = useState<string | null>(mockStore.getSelectedHome())
-
-  useEffect(() => {
-    if (!mockStore.isAuthenticated()) {
-      router.push('/login')
-    }
-  }, [router])
 
   const handleUpload = (file: File, supabaseUrl: string) => {
     console.log('Home uploaded to Supabase:', supabaseUrl)

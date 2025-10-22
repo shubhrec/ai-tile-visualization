@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { mockStore } from '@/lib/mockStore'
+import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import ImageGrid from '@/components/ImageGrid'
 import UploadButton from '@/components/UploadButton'
@@ -10,15 +11,10 @@ import BackButton from '@/components/BackButton'
 import { Camera, Check } from 'lucide-react'
 
 export default function SelectTilePage() {
+  useAuth()
   const router = useRouter()
   const [tiles, setTiles] = useState(mockStore.getTiles())
   const [selectedId, setSelectedId] = useState<string | null>(mockStore.getSelectedTile())
-
-  useEffect(() => {
-    if (!mockStore.isAuthenticated()) {
-      router.push('/login')
-    }
-  }, [router])
 
   const handleUpload = (file: File, supabaseUrl: string) => {
     console.log('Tile uploaded to Supabase:', supabaseUrl)
