@@ -24,15 +24,30 @@ export async function secureFetch(path: string, options: RequestInit = {}) {
 }
 
 export async function uploadImage(file: File, bucket: string) {
-  const formData = new FormData()
-  formData.append("file", file)
-  const res = await secureFetch(`/api/upload/${bucket}`, {
-    method: "POST",
-    body: formData,
-  })
-  const data = await res.json()
-  if (!data.success) throw new Error(data.error || "Upload failed")
-  return data.url
+  try {
+    const formData = new FormData()
+    formData.append("file", file)
+
+    const res = await secureFetch(`/api/upload/${bucket}`, {
+      method: "POST",
+      body: formData,
+    })
+
+    if (!res.ok) {
+      throw new Error(`Upload failed with status ${res.status}`)
+    }
+
+    const data = await res.json()
+
+    if (!data.success) {
+      throw new Error(data.error || "Upload failed")
+    }
+
+    return data.url
+  } catch (err) {
+    console.error('Upload error:', err)
+    throw err
+  }
 }
 
 export async function listImages(bucket: string) {

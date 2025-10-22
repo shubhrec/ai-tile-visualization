@@ -18,19 +18,34 @@ export default function UploadButton({ onUpload, label = 'Upload', variant = 'pr
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file && file.type.startsWith('image/')) {
-      setIsUploading(true)
-      toast.loading('Uploading image...', { id: 'upload' })
-      try {
-        const url = await uploadImage(file, bucket)
-        toast.success('Image uploaded successfully!', { id: 'upload' })
-        onUpload(file, url)
-      } catch (err) {
-        console.error('Upload failed', err)
-        toast.error('Upload failed. Please try again.', { id: 'upload' })
-      } finally {
-        setIsUploading(false)
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file')
+      return
+    }
+
+    if (isUploading) {
+      toast.info('Upload already in progress')
+      return
+    }
+
+    setIsUploading(true)
+    const toastId = `upload-${Date.now()}`
+    toast.loading('Uploading image...', { id: toastId })
+
+    try {
+      const url = await uploadImage(file, bucket)
+      toast.success('Image uploaded successfully!', { id: toastId })
+      onUpload(file, url)
+      if (inputRef.current) {
+        inputRef.current.value = ''
       }
+    } catch (err) {
+      console.error('Upload failed', err)
+      toast.error('Upload failed. Please try again.', { id: toastId })
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -49,8 +64,8 @@ export default function UploadButton({ onUpload, label = 'Upload', variant = 'pr
         className="hidden"
       />
       <button
-        onClick={() => inputRef.current?.click()}
-        className={`${baseClasses} ${variantClasses}`}
+        onClick={() => !isUploading && inputRef.current?.click()}
+        className={`${baseClasses} ${variantClasses} ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
         disabled={isUploading}
       >
         {isUploading ? (
