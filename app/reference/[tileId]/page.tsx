@@ -28,6 +28,18 @@ interface GeneratedImage {
   created_at: string
 }
 
+interface Home {
+  id: string
+  name: string
+  image_url: string
+  created_at: string
+}
+
+interface ComparisonData extends GeneratedImage {
+  home?: Home
+  homeAspect?: number
+}
+
 export default function ReferencePage() {
   useAuth()
   const params = useParams()
@@ -38,7 +50,8 @@ export default function ReferencePage() {
   const [loading, setLoading] = useState(true)
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([])
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [comparisonImage, setComparisonImage] = useState<GeneratedImage | null>(null)
+  const [comparisonImage, setComparisonImage] = useState<ComparisonData | null>(null)
+  const [comparisonLoading, setComparisonLoading] = useState(false)
 
   useEffect(() => {
     async function fetchTile() {
@@ -75,6 +88,40 @@ export default function ReferencePage() {
     }
     router.push(`/chat?tileId=${tileId}`)
   }
+
+  async function openComparison(gen: GeneratedImage) {
+    setComparisonImage(null)
+    if (!gen.home_id) {
+      toast.error('No home image associated with this generation')
+      return
+    }
+    setComparisonLoading(true)
+    try {
+      const res = await secureFetch(`/api/homes/${gen.home_id}`)
+      const data = await res.json()
+      if (data.success && data.home) {
+        setComparisonImage({ ...gen, home: data.home })
+      } else {
+        toast.error('Could not load home image')
+      }
+    } catch (err) {
+      console.error('Failed to fetch home for comparison', err)
+      toast.error('Could not load home image')
+    } finally {
+      setComparisonLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (comparisonImage?.home?.image_url) {
+      const img = new Image()
+      img.src = comparisonImage.home.image_url
+      img.onload = () => {
+        const aspectRatio = img.width / img.height
+        setComparisonImage(prev => prev ? { ...prev, homeAspect: aspectRatio } : null)
+      }
+    }
+  }, [comparisonImage?.home?.image_url])
 
   if (loading) {
     return (
@@ -145,8 +192,9 @@ export default function ReferencePage() {
                       <p className="text-xs sm:text-sm text-gray-600 mb-2 line-clamp-2">{item.prompt}</p>
                     )}
                     <button
-                      onClick={() => setComparisonImage(item)}
-                      className="w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs sm:text-sm font-medium"
+                      onClick={() => openComparison(item)}
+                      disabled={comparisonLoading}
+                      className="w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Compare
                     </button>
@@ -164,39 +212,51 @@ export default function ReferencePage() {
         imageUrl={selectedImage || ''}
       />
 
-      {comparisonImage && (
+      {comparisonImage && comparisonImage.home && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setComparisonImage(null)}>
-          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-6xl w-full" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 text-center">Before / After Comparison</h2>
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl p-4 sm:p-6 relative flex flex-col max-h-[95vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setComparisonImage(null)}
+              className="absolute top-2 right-2 bg-black/60 text-white p-2 rounded-full hover:bg-black/80 transition-colors z-10"
+              aria-label="Close modal"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <h2 className="text-lg sm:text-xl font-semibold text-center mb-2">Before / After Comparison</h2>
             {comparisonImage.prompt && (
-              <p className="text-sm text-gray-600 mb-4 text-center italic">{comparisonImage.prompt}</p>
+              <p className="text-xs sm:text-sm text-gray-600 mb-4 text-center italic">{comparisonImage.prompt}</p>
             )}
-            <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
-              {comparisonImage.home_image_url && (
-                <div className="flex-1 flex flex-col items-center">
-                  <p className="text-sm font-semibold text-gray-700 mb-2 text-center">Original Home</p>
-                  <img
-                    src={comparisonImage.home_image_url}
-                    alt="Original Home"
-                    className="max-w-full max-h-[70vh] w-auto h-auto rounded-lg shadow-md object-contain"
-                  />
-                </div>
-              )}
-              <div className="flex-1 flex flex-col items-center">
-                <p className="text-sm font-semibold text-gray-700 mb-2 text-center">Generated Result</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 justify-center items-start mx-auto w-full">
+              <div className="flex flex-col items-center">
+                <p className="text-sm font-semibold text-gray-700 mb-2">Original Home</p>
+                <img
+                  src={comparisonImage.home.image_url}
+                  alt={comparisonImage.home.name || 'Original Home'}
+                  className="max-h-[75vh] max-w-full rounded-lg object-contain border shadow-sm"
+                />
+              </div>
+              <div className="flex flex-col items-center">
+                <p className="text-sm font-semibold text-gray-700 mb-2">Generated Visualization</p>
                 <img
                   src={comparisonImage.image_url}
-                  alt="Generated"
-                  className="max-w-full max-h-[70vh] w-auto h-auto rounded-lg shadow-md object-contain"
+                  alt="Generated Visualization"
+                  className="max-h-[75vh] max-w-full rounded-lg object-contain border shadow-sm"
                 />
               </div>
             </div>
-            <button
-              className="mt-4 sm:mt-6 w-full px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors font-medium"
-              onClick={() => setComparisonImage(null)}
-            >
-              Close
-            </button>
+          </div>
+        </div>
+      )}
+
+      {comparisonLoading && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 shadow-xl">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading comparison...</p>
           </div>
         </div>
       )}
