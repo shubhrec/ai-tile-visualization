@@ -131,13 +131,32 @@ class MockStore {
   async generateImage(tileId: string | null, homeId: string | null, prompt: string): Promise<MockGeneratedMessage> {
     const { generateImage: apiGenerateImage } = await import('./api')
 
-    const tile = tileId ? this.getTileById(tileId) : null
-    const home = homeId ? this.mockHomes.find(h => h.id === homeId) : null
+    let tileUrl = ''
+    let homeUrl = ''
 
-    const tileUrl = tile?.imageUrl || ''
-    const homeUrl = home?.imageUrl || ''
+    const stored = typeof window !== 'undefined' ? sessionStorage.getItem('selectedTile') : null
+    if (stored) {
+      try {
+        const tile = JSON.parse(stored)
+        tileUrl = tile.image_url || ''
+      } catch (err) {
+        console.error('Failed to parse selectedTile from sessionStorage', err)
+      }
+    }
+
+    if (!tileUrl && tileId) {
+      const tile = this.getTileById(tileId)
+      tileUrl = tile?.imageUrl || ''
+    }
+
+    const home = homeId ? this.mockHomes.find(h => h.id === homeId) : null
+    homeUrl = home?.imageUrl || ''
 
     console.log('Generating image with URLs:', { tileUrl, homeUrl, prompt })
+
+    if (!tileUrl) {
+      throw new Error('Tile URL is required for generation')
+    }
 
     try {
       const result = await apiGenerateImage(tileUrl, homeUrl, prompt)

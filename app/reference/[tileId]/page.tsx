@@ -42,6 +42,7 @@ export default function ReferencePage() {
 
         const data = await res.json()
         setTile(data.tile)
+        sessionStorage.setItem('selectedTile', JSON.stringify(data.tile))
         setSavedGallery(mockStore.getSavedGeneratedForTile(tileId))
       } catch (err) {
         console.error('Failed to fetch tile', err)
@@ -55,6 +56,9 @@ export default function ReferencePage() {
   }, [tileId, router])
 
   const handleGenerate = () => {
+    if (tile) {
+      sessionStorage.setItem('selectedTile', JSON.stringify(tile))
+    }
     router.push(`/chat?tileId=${tileId}`)
   }
 

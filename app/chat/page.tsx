@@ -17,42 +17,49 @@ export default function ChatPage() {
   const searchParams = useSearchParams()
   const tileIdFromUrl = searchParams.get('tileId')
 
+  interface Tile {
+    id: string
+    name: string
+    image_url: string
+  }
+
   const [messages, setMessages] = useState<MockGeneratedMessage[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [selectedImage, setSelectedImage] = useState<MockGeneratedMessage | null>(null)
-  const [selectedTile, setSelectedTile] = useState(tileIdFromUrl ? mockStore.getTileById(tileIdFromUrl) : null)
+  const [selectedTile, setSelectedTile] = useState<Tile | null>(null)
   const [selectedHome, setSelectedHome] = useState(mockStore.getSelectedHome() ? mockStore.getHomes().find(h => h.id === mockStore.getSelectedHome()) : null)
 
   useEffect(() => {
-
-    if (tileIdFromUrl) {
-      mockStore.setSelectedTile(tileIdFromUrl)
-      setSelectedTile(mockStore.getTileById(tileIdFromUrl))
+    const stored = sessionStorage.getItem('selectedTile')
+    if (stored) {
+      try {
+        const tile = JSON.parse(stored)
+        setSelectedTile(tile)
+      } catch (err) {
+        console.error('Failed to parse selectedTile from sessionStorage', err)
+      }
     }
 
-    setMessages(mockStore.getGeneratedMessages())
-  }, [router, tileIdFromUrl])
-
-  useEffect(() => {
-    const storedTileId = mockStore.getSelectedTile()
     const storedHomeId = mockStore.getSelectedHome()
-
-    if (storedTileId) {
-      setSelectedTile(mockStore.getTileById(storedTileId))
-    }
     if (storedHomeId) {
       setSelectedHome(mockStore.getHomes().find(h => h.id === storedHomeId) || null)
     }
-  }, [])
+
+    setMessages(mockStore.getGeneratedMessages())
+  }, [tileIdFromUrl])
 
   const handleGenerate = async (prompt: string) => {
+    if (!selectedTile) {
+      toast.error('Please select a tile first')
+      return
+    }
+
     setIsGenerating(true)
 
-    const selectedTileId = tileIdFromUrl || mockStore.getSelectedTile()
     const selectedHomeId = mockStore.getSelectedHome()
 
     try {
-      const newMessage = await mockStore.generateImage(selectedTileId, selectedHomeId, prompt)
+      const newMessage = await mockStore.generateImage(selectedTile.id, selectedHomeId, prompt)
       setMessages(mockStore.getGeneratedMessages())
       toast.success('Image generated successfully!')
     } catch (error) {
@@ -64,10 +71,17 @@ export default function ChatPage() {
   }
 
   const handleSelectionsChange = () => {
-    const storedTileId = mockStore.getSelectedTile()
-    const storedHomeId = mockStore.getSelectedHome()
+    const stored = sessionStorage.getItem('selectedTile')
+    if (stored) {
+      try {
+        const tile = JSON.parse(stored)
+        setSelectedTile(tile)
+      } catch (err) {
+        console.error('Failed to parse selectedTile from sessionStorage', err)
+      }
+    }
 
-    setSelectedTile(storedTileId ? mockStore.getTileById(storedTileId) : null)
+    const storedHomeId = mockStore.getSelectedHome()
     setSelectedHome(storedHomeId ? mockStore.getHomes().find(h => h.id === storedHomeId) || null : null)
   }
 
@@ -98,7 +112,7 @@ export default function ChatPage() {
               {selectedTile && (
                 <div className="flex flex-col items-center gap-1 sm:gap-2">
                   <img
-                    src={selectedTile.imageUrl}
+                    src={selectedTile.image_url}
                     alt={selectedTile.name}
                     className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg border-2 border-blue-500"
                   />
