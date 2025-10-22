@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar'
 import ChatMessage from '@/components/ChatMessage'
 import GenerateBar from '@/components/GenerateBar'
 import Modal from '@/components/Modal'
+import ImageModal from '@/components/ImageModal'
 import BackButton from '@/components/BackButton'
 import { toast } from 'sonner'
 
@@ -36,6 +37,7 @@ export default function ChatPage() {
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null)
   const [selectedHome, setSelectedHome] = useState<Home | null>(null)
   const [homes, setHomes] = useState<Home[]>([])
+  const [viewImage, setViewImage] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadData() {
@@ -155,7 +157,8 @@ export default function ChatPage() {
                   <img
                     src={selectedTile.image_url}
                     alt={selectedTile.name}
-                    className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg border-2 border-blue-500"
+                    className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg border-2 border-blue-500 cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => setViewImage(selectedTile.image_url)}
                   />
                   <p className="text-xs font-medium text-gray-700 text-center max-w-[80px] sm:max-w-full truncate">{selectedTile.name}</p>
                   <p className="text-xs text-gray-500">Tile</p>
@@ -166,7 +169,8 @@ export default function ChatPage() {
                   <img
                     src={selectedHome.image_url}
                     alt={selectedHome.name || 'Home'}
-                    className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg border-2 border-green-500"
+                    className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg border-2 border-green-500 cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => setViewImage(selectedHome.image_url)}
                   />
                   <p className="text-xs font-medium text-gray-700 text-center max-w-[80px] sm:max-w-full truncate">{selectedHome.name || 'Home'}</p>
                   <p className="text-xs text-gray-500">Home</p>
@@ -223,6 +227,12 @@ export default function ChatPage() {
         onClose={() => setSelectedImage(null)}
         imageUrl={selectedImage?.imageUrl || ''}
         title={selectedImage?.prompt}
+      />
+
+      <ImageModal
+        isOpen={!!viewImage}
+        onClose={() => setViewImage(null)}
+        imageUrl={viewImage || ''}
       />
     </div>
   )

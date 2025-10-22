@@ -137,7 +137,7 @@ export default function ReferencePage() {
                       src={item.image_url}
                       alt="Generated visualization"
                       className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => setComparisonImage(item)}
+                      onClick={() => setSelectedImage(item.image_url)}
                     />
                   </div>
                   <div className="p-2 sm:p-3">
@@ -171,23 +171,23 @@ export default function ReferencePage() {
             {comparisonImage.prompt && (
               <p className="text-sm text-gray-600 mb-4 text-center italic">{comparisonImage.prompt}</p>
             )}
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
               {comparisonImage.home_image_url && (
-                <div className="flex-1">
+                <div className="flex-1 flex flex-col items-center">
                   <p className="text-sm font-semibold text-gray-700 mb-2 text-center">Original Home</p>
                   <img
                     src={comparisonImage.home_image_url}
                     alt="Original Home"
-                    className="w-full rounded-lg shadow-md"
+                    className="max-w-full max-h-[70vh] w-auto h-auto rounded-lg shadow-md object-contain"
                   />
                 </div>
               )}
-              <div className="flex-1">
+              <div className="flex-1 flex flex-col items-center">
                 <p className="text-sm font-semibold text-gray-700 mb-2 text-center">Generated Result</p>
                 <img
                   src={comparisonImage.image_url}
                   alt="Generated"
-                  className="w-full rounded-lg shadow-md"
+                  className="max-w-full max-h-[70vh] w-auto h-auto rounded-lg shadow-md object-contain"
                 />
               </div>
             </div>
