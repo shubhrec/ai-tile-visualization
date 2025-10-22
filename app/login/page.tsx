@@ -9,16 +9,17 @@ import { toast } from 'sonner'
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loginLoading, setLoginLoading] = useState(false)
+  const [signupLoading, setSignupLoading] = useState(false)
   const router = useRouter()
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
+    setLoginLoading(true)
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       toast.error(error.message)
-      setLoading(false)
+      setLoginLoading(false)
       return
     }
     const token = data?.session?.access_token
@@ -29,12 +30,12 @@ export default function LoginPage() {
     } else {
       toast.error('Login failed.')
     }
-    setLoading(false)
+    setLoginLoading(false)
   }
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
+    setSignupLoading(true)
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -42,14 +43,14 @@ export default function LoginPage() {
     })
     if (error) {
       toast.error(error.message)
-      setLoading(false)
+      setSignupLoading(false)
       return
     }
 
     const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password })
     if (loginError) {
       toast.error(loginError.message)
-      setLoading(false)
+      setSignupLoading(false)
       return
     }
     const token = loginData?.session?.access_token
@@ -60,7 +61,7 @@ export default function LoginPage() {
     } else {
       toast.error('Signup failed.')
     }
-    setLoading(false)
+    setSignupLoading(false)
   }
 
   return (
@@ -107,20 +108,20 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleLogin}
-                disabled={loading}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-blue-400 disabled:cursor-not-allowed"
+                disabled={loginLoading}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                {loading ? 'Processing...' : 'Login'}
+                {loginLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+                {loginLoading ? 'Logging in...' : 'Login'}
               </button>
               <button
                 type="button"
                 onClick={handleSignup}
-                disabled={loading}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:bg-green-400 disabled:cursor-not-allowed"
+                disabled={signupLoading}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                {loading ? 'Processing...' : 'Sign Up'}
+                {signupLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+                {signupLoading ? 'Signing up...' : 'Sign Up'}
               </button>
             </div>
           </form>
