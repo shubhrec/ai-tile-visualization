@@ -2,12 +2,21 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { secureFetch } from '@/lib/api'
 import { mockStore, MockGeneratedMessage } from '@/lib/mockStore'
 import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import Modal from '@/components/Modal'
 import BackButton from '@/components/BackButton'
 import { Sparkles } from 'lucide-react'
+import { toast } from 'sonner'
+
+interface Tile {
+  id: string
+  name: string
+  image_url: string
+  created_at: string
+}
 
 export default function ReferencePage() {
   useAuth()
@@ -15,22 +24,50 @@ export default function ReferencePage() {
   const router = useRouter()
   const tileId = params.tileId as string
 
-  const [tile, setTile] = useState(mockStore.getTileById(tileId))
+  const [tile, setTile] = useState<Tile | null>(null)
+  const [loading, setLoading] = useState(true)
   const [savedGallery, setSavedGallery] = useState<MockGeneratedMessage[]>([])
   const [selectedImage, setSelectedImage] = useState<MockGeneratedMessage | null>(null)
 
   useEffect(() => {
+    async function fetchTile() {
+      try {
+        const res = await secureFetch('/api/tiles')
+        const data = await res.json()
+        const found = data.tiles.find((t: Tile) => t.id === tileId)
 
-    if (!tile) {
-      router.push('/catalog')
-      return
+        if (!found) {
+          toast.error('Tile not found')
+          router.push('/catalog')
+          return
+        }
+
+        setTile(found)
+        setSavedGallery(mockStore.getSavedGeneratedForTile(tileId))
+      } catch (err) {
+        console.error('Failed to fetch tile', err)
+        toast.error('Failed to load tile')
+        router.push('/catalog')
+      } finally {
+        setLoading(false)
+      }
     }
-
-    setSavedGallery(mockStore.getSavedGeneratedForTile(tileId))
-  }, [tileId, tile, router])
+    fetchTile()
+  }, [tileId, router])
 
   const handleGenerate = () => {
     router.push(`/chat?tileId=${tileId}`)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    )
   }
 
   if (!tile) return null
@@ -46,7 +83,7 @@ export default function ReferencePage() {
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
             <img
-              src={tile.imageUrl}
+              src={tile.image_url}
               alt={tile.name}
               className="w-full sm:w-48 md:w-64 h-48 sm:h-48 md:h-64 object-cover rounded-lg shadow-lg"
             />
