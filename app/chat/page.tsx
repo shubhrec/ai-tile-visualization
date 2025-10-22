@@ -49,17 +49,21 @@ export default function ChatPage() {
         }
       }
 
+      const storedHome = sessionStorage.getItem('selectedHome')
+      if (storedHome) {
+        try {
+          const home = JSON.parse(storedHome)
+          setSelectedHome(home)
+        } catch (err) {
+          console.error('Failed to parse selectedHome from sessionStorage', err)
+        }
+      }
+
       try {
         const { secureFetch } = await import('@/lib/api')
         const res = await secureFetch('/api/homes')
         const data = await res.json()
         setHomes(data.homes || [])
-
-        const storedHomeId = mockStore.getSelectedHome()
-        if (storedHomeId && data.homes) {
-          const home = data.homes.find((h: Home) => h.id === storedHomeId)
-          setSelectedHome(home || null)
-        }
       } catch (err) {
         console.error('Failed to load homes', err)
       }
@@ -111,10 +115,14 @@ export default function ChatPage() {
       }
     }
 
-    const storedHomeId = mockStore.getSelectedHome()
-    if (storedHomeId && homes.length > 0) {
-      const home = homes.find(h => h.id === storedHomeId)
-      setSelectedHome(home || null)
+    const storedHome = sessionStorage.getItem('selectedHome')
+    if (storedHome) {
+      try {
+        const home = JSON.parse(storedHome)
+        setSelectedHome(home)
+      } catch (err) {
+        console.error('Failed to parse selectedHome from sessionStorage', err)
+      }
     }
   }
 
@@ -157,9 +165,10 @@ export default function ChatPage() {
                 <div className="flex flex-col items-center gap-1 sm:gap-2">
                   <img
                     src={selectedHome.image_url}
-                    alt="Home"
+                    alt={selectedHome.name || 'Home'}
                     className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg border-2 border-green-500"
                   />
+                  <p className="text-xs font-medium text-gray-700 text-center max-w-[80px] sm:max-w-full truncate">{selectedHome.name || 'Home'}</p>
                   <p className="text-xs text-gray-500">Home</p>
                 </div>
               )}

@@ -25,9 +25,14 @@ export default function SelectHomePage() {
 
   useEffect(() => {
     loadHomes()
-    const savedId = sessionStorage.getItem('selectedHomeId')
-    if (savedId) {
-      setSelectedId(savedId)
+    const savedHome = sessionStorage.getItem('selectedHome')
+    if (savedHome) {
+      try {
+        const home = JSON.parse(savedHome)
+        setSelectedId(home.id)
+      } catch (err) {
+        console.error('Failed to parse saved home', err)
+      }
     }
   }, [])
 
@@ -65,9 +70,12 @@ export default function SelectHomePage() {
   }
 
   const handleConfirm = () => {
-    if (selectedId) {
-      sessionStorage.setItem('selectedHomeId', selectedId)
+    const selectedHome = homes.find(h => h.id === selectedId)
+    if (selectedHome) {
+      sessionStorage.setItem('selectedHome', JSON.stringify(selectedHome))
       router.back()
+    } else {
+      toast.error('Please select a home before confirming')
     }
   }
 
