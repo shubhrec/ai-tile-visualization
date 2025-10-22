@@ -2,20 +2,45 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { mockStore } from '@/lib/mockStore'
+import { secureFetch } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import ImageGrid from '@/components/ImageGrid'
 import UploadButton from '@/components/UploadButton'
 import BackButton from '@/components/BackButton'
+import { toast } from 'sonner'
+
+interface Tile {
+  id: string
+  name: string
+  image_url: string
+  created_at: string
+}
 
 export default function CatalogPage() {
   useAuth()
   const router = useRouter()
-  const [tiles, setTiles] = useState(mockStore.getTiles())
+  const [tiles, setTiles] = useState<Tile[]>([])
+  const [loading, setLoading] = useState(true)
   const [showUpload, setShowUpload] = useState(false)
   const [tileName, setTileName] = useState('')
   const [uploadedUrl, setUploadedUrl] = useState('')
+
+  useEffect(() => {
+    async function loadTiles() {
+      try {
+        const res = await secureFetch('/api/tiles')
+        const data = await res.json()
+        setTiles(data.tiles || [])
+      } catch (err) {
+        console.error('Failed to fetch tiles', err)
+        toast.error('Failed to load tiles')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadTiles()
+  }, [])
 
   const handleTileClick = (id: string) => {
     router.push(`/reference/${id}`)
@@ -26,13 +51,28 @@ export default function CatalogPage() {
     setShowUpload(true)
   }
 
-  const handleSaveTile = () => {
+  const handleSaveTile = async () => {
     if (tileName.trim() && uploadedUrl) {
-      mockStore.addTile(tileName, uploadedUrl)
-      setTiles(mockStore.getTiles())
-      setShowUpload(false)
-      setTileName('')
-      setUploadedUrl('')
+      try {
+        const res = await secureFetch('/api/tiles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_url: uploadedUrl, name: tileName }),
+        })
+        const data = await res.json()
+        if (data.tile) {
+          setTiles(prev => [data.tile, ...prev])
+          toast.success('Tile saved successfully')
+          setShowUpload(false)
+          setTileName('')
+          setUploadedUrl('')
+        } else {
+          toast.error('Failed to save tile')
+        }
+      } catch (err) {
+        console.error('Failed to save tile', err)
+        toast.error('Failed to save tile')
+      }
     }
   }
 
@@ -85,7 +125,25 @@ export default function CatalogPage() {
           </div>
         )}
 
-        <ImageGrid items={tiles} onItemClick={handleTileClick} />
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : tiles.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed">
+            <p className="text-gray-500">No tiles yet</p>
+            <p className="text-sm text-gray-400 mt-2">Upload your first tile to get started</p>
+          </div>
+        ) : (
+          <ImageGrid
+            items={tiles.map(tile => ({
+              id: tile.id,
+              name: tile.name,
+              imageUrl: tile.image_url
+            }))}
+            onItemClick={handleTileClick}
+          />
+        )}
       </div>
     </div>
   )
