@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { secureFetch } from '@/lib/api'
-import { mockStore, MockGeneratedMessage } from '@/lib/mockStore'
 import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import Modal from '@/components/Modal'
@@ -18,6 +17,17 @@ interface Tile {
   created_at: string
 }
 
+interface GeneratedImage {
+  id: string
+  tile_id: string
+  home_id: string | null
+  prompt: string
+  image_url: string
+  home_image_url: string | null
+  saved: boolean
+  created_at: string
+}
+
 export default function ReferencePage() {
   useAuth()
   const params = useParams()
@@ -26,8 +36,9 @@ export default function ReferencePage() {
 
   const [tile, setTile] = useState<Tile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [savedGallery, setSavedGallery] = useState<MockGeneratedMessage[]>([])
-  const [selectedImage, setSelectedImage] = useState<MockGeneratedMessage | null>(null)
+  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([])
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [comparisonImage, setComparisonImage] = useState<GeneratedImage | null>(null)
 
   useEffect(() => {
     async function fetchTile() {
@@ -43,7 +54,10 @@ export default function ReferencePage() {
         const data = await res.json()
         setTile(data.tile)
         sessionStorage.setItem('selectedTile', JSON.stringify(data.tile))
-        setSavedGallery(mockStore.getSavedGeneratedForTile(tileId))
+
+        const genRes = await secureFetch(`/api/tiles/${tileId}/generated`)
+        const genData = await genRes.json()
+        setGeneratedImages(genData.generated || [])
       } catch (err) {
         console.error('Failed to fetch tile', err)
         toast.error('Failed to load tile')
@@ -88,7 +102,8 @@ export default function ReferencePage() {
             <img
               src={tile.image_url}
               alt={tile.name}
-              className="w-full sm:w-48 md:w-64 h-48 sm:h-48 md:h-64 object-cover rounded-lg shadow-lg"
+              className="w-full sm:w-48 md:w-64 h-48 sm:h-48 md:h-64 object-cover rounded-lg shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => setSelectedImage(tile.image_url)}
             />
             <div className="flex-1 w-full">
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{tile.name}</h1>
@@ -107,21 +122,22 @@ export default function ReferencePage() {
         </div>
 
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Saved Gallery</h2>
-          {savedGallery.length === 0 ? (
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Generated Gallery</h2>
+          {generatedImages.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed">
-              <p className="text-gray-500">No saved visualizations yet</p>
+              <p className="text-gray-500">No generated visualizations yet</p>
               <p className="text-sm text-gray-400 mt-2">Generate and save images to build your gallery</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-              {savedGallery.map((item) => (
-                <div key={item.id} className="bg-white rounded-lg overflow-hidden shadow-md">
+              {generatedImages.map((item) => (
+                <div key={item.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
                   <div className="relative aspect-square">
                     <img
-                      src={item.imageUrl}
-                      alt="Saved visualization"
-                      className="w-full h-full object-cover"
+                      src={item.image_url}
+                      alt="Generated visualization"
+                      className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => setComparisonImage(item)}
                     />
                   </div>
                   <div className="p-2 sm:p-3">
@@ -129,10 +145,10 @@ export default function ReferencePage() {
                       <p className="text-xs sm:text-sm text-gray-600 mb-2 line-clamp-2">{item.prompt}</p>
                     )}
                     <button
-                      onClick={() => setSelectedImage(item)}
+                      onClick={() => setComparisonImage(item)}
                       className="w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs sm:text-sm font-medium"
                     >
-                      View
+                      Compare
                     </button>
                   </div>
                 </div>
@@ -145,9 +161,45 @@ export default function ReferencePage() {
       <Modal
         isOpen={!!selectedImage}
         onClose={() => setSelectedImage(null)}
-        imageUrl={selectedImage?.imageUrl || ''}
-        title={selectedImage?.prompt}
+        imageUrl={selectedImage || ''}
       />
+
+      {comparisonImage && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setComparisonImage(null)}>
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-6xl w-full" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 text-center">Before / After Comparison</h2>
+            {comparisonImage.prompt && (
+              <p className="text-sm text-gray-600 mb-4 text-center italic">{comparisonImage.prompt}</p>
+            )}
+            <div className="flex flex-col md:flex-row gap-4">
+              {comparisonImage.home_image_url && (
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-gray-700 mb-2 text-center">Original Home</p>
+                  <img
+                    src={comparisonImage.home_image_url}
+                    alt="Original Home"
+                    className="w-full rounded-lg shadow-md"
+                  />
+                </div>
+              )}
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-700 mb-2 text-center">Generated Result</p>
+                <img
+                  src={comparisonImage.image_url}
+                  alt="Generated"
+                  className="w-full rounded-lg shadow-md"
+                />
+              </div>
+            </div>
+            <button
+              className="mt-4 sm:mt-6 w-full px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors font-medium"
+              onClick={() => setComparisonImage(null)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
