@@ -12,39 +12,53 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
-  async function handleAuth(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (signInError && signInError.message.includes('Invalid login credentials')) {
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password })
-      if (signUpError) {
-        toast.error(signUpError.message)
-        setLoading(false)
-        return
-      }
-      const token = signUpData?.session?.access_token
-      if (token) {
-        localStorage.setItem('token', token)
-        toast.success('Account created successfully!')
-        router.push('/catalog')
-      } else {
-        toast.error('Authentication failed, please try again.')
-      }
-    } else if (signInError) {
-      toast.error(signInError.message)
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      toast.error(error.message)
       setLoading(false)
       return
+    }
+    const token = data?.session?.access_token
+    if (token) {
+      localStorage.setItem('token', token)
+      toast.success('Logged in successfully!')
+      router.push('/catalog')
     } else {
-      const token = signInData?.session?.access_token
-      if (token) {
-        localStorage.setItem('token', token)
-        router.push('/catalog')
-      } else {
-        toast.error('Authentication failed, please try again.')
-      }
+      toast.error('Login failed.')
+    }
+    setLoading(false)
+  }
+
+  async function handleSignup(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: undefined },
+    })
+    if (error) {
+      toast.error(error.message)
+      setLoading(false)
+      return
+    }
+
+    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password })
+    if (loginError) {
+      toast.error(loginError.message)
+      setLoading(false)
+      return
+    }
+    const token = loginData?.session?.access_token
+    if (token) {
+      localStorage.setItem('token', token)
+      toast.success('Account created successfully!')
+      router.push('/catalog')
+    } else {
+      toast.error('Signup failed.')
     }
     setLoading(false)
   }
@@ -58,7 +72,7 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6 sm:p-8">
-          <form onSubmit={handleAuth} className="space-y-6">
+          <form className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email
@@ -89,14 +103,26 @@ export default function LoginPage() {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-blue-400 disabled:cursor-not-allowed"
-            >
-              {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-              {loading ? 'Signing in...' : 'Continue'}
-            </button>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleLogin}
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-blue-400 disabled:cursor-not-allowed"
+              >
+                {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+                {loading ? 'Processing...' : 'Login'}
+              </button>
+              <button
+                type="button"
+                onClick={handleSignup}
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:bg-green-400 disabled:cursor-not-allowed"
+              >
+                {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+                {loading ? 'Processing...' : 'Sign Up'}
+              </button>
+            </div>
           </form>
         </div>
       </div>
