@@ -32,17 +32,16 @@ export default function ReferencePage() {
   useEffect(() => {
     async function fetchTile() {
       try {
-        const res = await secureFetch('/api/tiles')
-        const data = await res.json()
-        const found = data.tiles.find((t: Tile) => t.id === tileId)
+        const res = await secureFetch(`/api/tiles/${tileId}`)
 
-        if (!found) {
+        if (!res.ok) {
           toast.error('Tile not found')
           router.push('/catalog')
           return
         }
 
-        setTile(found)
+        const data = await res.json()
+        setTile(data.tile)
         setSavedGallery(mockStore.getSavedGeneratedForTile(tileId))
       } catch (err) {
         console.error('Failed to fetch tile', err)
