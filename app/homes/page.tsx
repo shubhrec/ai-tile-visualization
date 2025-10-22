@@ -24,8 +24,6 @@ export default function HomesPage() {
   const [homes, setHomes] = useState<Home[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [showUpload, setShowUpload] = useState(false)
-  const [uploadedUrl, setUploadedUrl] = useState('')
 
   useEffect(() => {
     loadHomes()
@@ -62,41 +60,21 @@ export default function HomesPage() {
     }
   }
 
-  async function handleUploadComplete() {
-    if (!uploadedUrl) return
-
+  async function handleUpload(file: File, url: string) {
     try {
       const res = await secureFetch('/api/homes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_url: uploadedUrl, name: 'Home' }),
+        body: JSON.stringify({ image_url: url, name: file.name }),
       })
       const data = await res.json()
-      setHomes(prev => [data.home, ...prev])
-      toast.success('Home uploaded successfully')
-      setShowUpload(false)
-      setUploadedUrl('')
-    } catch (err) {
-      console.error('Failed to save home', err)
-      toast.error('Failed to save home')
-    }
-  }
 
-  const handleUpload = (file: File, supabaseUrl: string) => {
-    setUploadedUrl(supabaseUrl)
-    handleUploadCompleteImmediate(supabaseUrl, file.name)
-  }
-
-  async function handleUploadCompleteImmediate(url: string, filename: string) {
-    try {
-      const res = await secureFetch('/api/homes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_url: url, name: filename }),
-      })
-      const data = await res.json()
-      setHomes(prev => [data.home, ...prev])
-      toast.success('Home uploaded successfully')
+      if (data.success && data.home) {
+        setHomes(prev => [data.home, ...prev])
+        toast.success('Home uploaded successfully')
+      } else {
+        toast.error('Failed to save home')
+      }
     } catch (err) {
       console.error('Failed to save home', err)
       toast.error('Failed to save home')
