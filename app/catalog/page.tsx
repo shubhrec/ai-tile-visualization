@@ -76,6 +76,21 @@ export default function CatalogPage() {
     }
   }
 
+  const handleDelete = async (tileId: string) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this tile?')
+    if (!confirmDelete) return
+
+    try {
+      const res = await secureFetch(`/api/tiles/${tileId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Delete failed')
+      setTiles(prev => prev.filter(t => t.id !== tileId))
+      toast.success('Tile deleted successfully')
+    } catch (err) {
+      console.error('Delete error:', err)
+      toast.error('Failed to delete tile')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -142,6 +157,8 @@ export default function CatalogPage() {
               imageUrl: tile.image_url
             }))}
             onItemClick={handleTileClick}
+            onDelete={handleDelete}
+            showDelete={true}
           />
         )}
       </div>
