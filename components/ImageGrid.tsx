@@ -12,9 +12,10 @@ interface ImageGridProps {
   onItemClick: (id: string) => void
   onDelete?: (id: string) => void
   showDelete?: boolean
+  editMode?: boolean
 }
 
-export default function ImageGrid({ items, onItemClick, onDelete, showDelete = false }: ImageGridProps) {
+export default function ImageGrid({ items, onItemClick, onDelete, showDelete = false, editMode = false }: ImageGridProps) {
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
 
   const handleImageLoad = (id: string) => {
@@ -26,7 +27,7 @@ export default function ImageGrid({ items, onItemClick, onDelete, showDelete = f
       {items.map((item) => (
         <div key={item.id} className="relative group">
           <button
-            onClick={() => onItemClick(item.id)}
+            onClick={() => !editMode && onItemClick(item.id)}
             className="w-full aspect-square rounded-lg overflow-hidden bg-gray-100 hover:opacity-90 transition-opacity"
           >
             {!loadedImages.has(item.id) && (
@@ -47,14 +48,14 @@ export default function ImageGrid({ items, onItemClick, onDelete, showDelete = f
               </div>
             )}
           </button>
-          {showDelete && onDelete && (
+          {showDelete && onDelete && editMode && (
             <button
               onClick={(e) => {
                 e.stopPropagation()
                 onDelete(item.id)
               }}
-              className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-lg"
-              title="Delete tile"
+              className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-2 hover:bg-red-700 shadow-md transition-colors"
+              title="Delete"
             >
               <Trash2 className="w-4 h-4" />
             </button>

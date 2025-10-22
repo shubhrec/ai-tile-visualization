@@ -25,6 +25,7 @@ export default function CatalogPage() {
   const [showUpload, setShowUpload] = useState(false)
   const [tileName, setTileName] = useState('')
   const [uploadedUrl, setUploadedUrl] = useState('')
+  const [editMode, setEditMode] = useState(false)
 
   useEffect(() => {
     async function loadTiles() {
@@ -101,7 +102,17 @@ export default function CatalogPage() {
         </div>
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Tile Catalog</h1>
-          <UploadButton onUpload={handleUpload} label="Upload Tile" />
+          <div className="flex gap-2">
+            {tiles.length > 0 && (
+              <button
+                onClick={() => setEditMode(!editMode)}
+                className="px-3 py-2 rounded-md border text-sm bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                {editMode ? 'Done' : 'Edit'}
+              </button>
+            )}
+            <UploadButton onUpload={handleUpload} label="Upload Tile" />
+          </div>
         </div>
 
         {showUpload && (
@@ -159,6 +170,7 @@ export default function CatalogPage() {
             onItemClick={handleTileClick}
             onDelete={handleDelete}
             showDelete={true}
+            editMode={editMode}
           />
         )}
       </div>

@@ -64,6 +64,21 @@ export default function LoginPage() {
     setSignupLoading(false)
   }
 
+  async function handleForgotPassword() {
+    const emailInput = prompt('Enter your registered email to reset password:')
+    if (!emailInput) return
+
+    const { error } = await supabase.auth.resetPasswordForEmail(emailInput, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+
+    if (error) {
+      toast.error(error.message)
+    } else {
+      toast.success('Password reset link sent! Check your email.')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-3 sm:p-4">
       <div className="w-full max-w-md">
@@ -122,6 +137,16 @@ export default function LoginPage() {
               >
                 {signupLoading && <Loader2 className="w-5 h-5 animate-spin" />}
                 {signupLoading ? 'Signing up...' : 'Sign Up'}
+              </button>
+            </div>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-sm text-blue-600 hover:underline cursor-pointer"
+              >
+                Forgot password?
               </button>
             </div>
           </form>

@@ -24,6 +24,7 @@ export default function HomesPage() {
   const [homes, setHomes] = useState<Home[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [editMode, setEditMode] = useState(false)
 
   useEffect(() => {
     loadHomes()
@@ -92,7 +93,17 @@ export default function HomesPage() {
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Homes</h1>
-          <UploadButton onUpload={handleUpload} bucket="homes" />
+          <div className="flex gap-2">
+            {homes.length > 0 && (
+              <button
+                onClick={() => setEditMode(!editMode)}
+                className="px-3 py-2 rounded-md border text-sm bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                {editMode ? 'Done' : 'Edit'}
+              </button>
+            )}
+            <UploadButton onUpload={handleUpload} bucket="homes" />
+          </div>
         </div>
 
         {loading ? (
@@ -112,18 +123,20 @@ export default function HomesPage() {
                   src={home.image_url}
                   alt={home.name}
                   className="w-full h-40 object-cover cursor-pointer"
-                  onClick={() => setSelectedImage(home.image_url)}
+                  onClick={() => !editMode && setSelectedImage(home.image_url)}
                 />
                 <div className="p-2 text-center">
                   <p className="text-xs sm:text-sm text-gray-700 truncate">{home.name || 'Home'}</p>
                 </div>
-                <button
-                  onClick={() => handleDelete(home.id)}
-                  className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                  title="Delete home"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {editMode && (
+                  <button
+                    onClick={() => handleDelete(home.id)}
+                    className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 shadow-md transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             ))}
           </div>
