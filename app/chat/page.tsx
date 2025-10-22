@@ -7,6 +7,8 @@ import Navbar from '@/components/Navbar'
 import ChatMessage from '@/components/ChatMessage'
 import GenerateBar from '@/components/GenerateBar'
 import Modal from '@/components/Modal'
+import BackButton from '@/components/BackButton'
+import { toast } from 'sonner'
 
 export default function ChatPage() {
   const router = useRouter()
@@ -54,9 +56,10 @@ export default function ChatPage() {
     try {
       const newMessage = await mockStore.generateImage(selectedTileId, selectedHomeId, prompt)
       setMessages(mockStore.getGeneratedMessages())
+      toast.success('Image generated successfully!')
     } catch (error) {
       console.error('Generation failed:', error)
-      alert('Failed to generate image. Make sure the backend is running on http://localhost:8000')
+      toast.error('Failed to generate image. Make sure the backend is running.')
     } finally {
       setIsGenerating(false)
     }
@@ -85,6 +88,9 @@ export default function ChatPage() {
       <Navbar />
 
       <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="mb-4">
+          <BackButton />
+        </div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Generate Visualizations</h1>
 
         {(selectedTile || selectedHome) && (
@@ -136,8 +142,17 @@ export default function ChatPage() {
         )}
 
         {isGenerating && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg text-center">
-            <p className="text-blue-700 font-medium">Generating visualization...</p>
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-sm mx-4 text-center shadow-2xl">
+              <div className="mb-4 flex justify-center">
+                <div className="relative w-16 h-16">
+                  <div className="absolute inset-0 border-4 border-blue-200 rounded-lg animate-pulse"></div>
+                  <div className="absolute inset-0 border-4 border-t-blue-600 border-r-blue-600 rounded-lg animate-spin"></div>
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Visualizing your design</h3>
+              <p className="text-sm text-gray-600">Please wait while we generate your image...</p>
+            </div>
           </div>
         )}
       </div>

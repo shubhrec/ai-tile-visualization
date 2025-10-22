@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef } from 'react'
-import { Upload } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Upload, Loader2 } from 'lucide-react'
 import { uploadImage } from '@/lib/api'
+import { toast } from 'sonner'
 
 interface UploadButtonProps {
   onUpload: (file: File, url: string) => void
@@ -13,16 +14,22 @@ interface UploadButtonProps {
 
 export default function UploadButton({ onUpload, label = 'Upload', variant = 'primary', bucket = 'tiles' }: UploadButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file && file.type.startsWith('image/')) {
+      setIsUploading(true)
+      toast.loading('Uploading image...', { id: 'upload' })
       try {
         const url = await uploadImage(file, bucket)
+        toast.success('Image uploaded successfully!', { id: 'upload' })
         onUpload(file, url)
       } catch (err) {
         console.error('Upload failed', err)
-        alert('Upload failed')
+        toast.error('Upload failed. Please try again.', { id: 'upload' })
+      } finally {
+        setIsUploading(false)
       }
     }
   }
@@ -44,9 +51,14 @@ export default function UploadButton({ onUpload, label = 'Upload', variant = 'pr
       <button
         onClick={() => inputRef.current?.click()}
         className={`${baseClasses} ${variantClasses}`}
+        disabled={isUploading}
       >
-        <Upload className="w-4 h-4" />
-        {label}
+        {isUploading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Upload className="w-4 h-4" />
+        )}
+        {isUploading ? 'Uploading...' : label}
       </button>
     </>
   )

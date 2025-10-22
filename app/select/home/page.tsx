@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { mockStore, MockHome } from '@/lib/mockStore'
 import Navbar from '@/components/Navbar'
 import UploadButton from '@/components/UploadButton'
+import BackButton from '@/components/BackButton'
 import { Camera, Check } from 'lucide-react'
 
 export default function SelectHomePage() {
@@ -38,6 +39,9 @@ export default function SelectHomePage() {
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="mb-4">
+          <BackButton />
+        </div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Select Home Image</h1>
 
         <div className="flex gap-2 mb-4 sm:mb-6 flex-wrap">

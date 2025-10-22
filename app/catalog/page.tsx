@@ -6,6 +6,7 @@ import { mockStore } from '@/lib/mockStore'
 import Navbar from '@/components/Navbar'
 import ImageGrid from '@/components/ImageGrid'
 import UploadButton from '@/components/UploadButton'
+import BackButton from '@/components/BackButton'
 
 export default function CatalogPage() {
   const router = useRouter()
@@ -44,6 +45,9 @@ export default function CatalogPage() {
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="mb-4">
+          <BackButton />
+        </div>
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Tile Catalog</h1>
           <UploadButton onUpload={handleUpload} label="Upload Tile" />

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { mockStore, MockGeneratedMessage } from '@/lib/mockStore'
 import Navbar from '@/components/Navbar'
 import Modal from '@/components/Modal'
+import BackButton from '@/components/BackButton'
 import { Sparkles } from 'lucide-react'
 
 export default function ReferencePage() {
@@ -41,6 +42,9 @@ export default function ReferencePage() {
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="mb-4">
+          <BackButton />
+        </div>
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
             <img
