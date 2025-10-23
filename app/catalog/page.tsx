@@ -6,7 +6,6 @@ import { secureFetch } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import ImageGrid from '@/components/ImageGrid'
-import BackButton from '@/components/BackButton'
 import TileUploadModal from '@/components/TileUploadModal'
 import { MessageCircle, PlusCircle, Upload } from 'lucide-react'
 import { toast } from 'sonner'
@@ -71,13 +70,11 @@ export default function CatalogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <div className="mb-4">
-          <BackButton />
-        </div>
+      <div className="flex-1 overflow-y-auto pb-24">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="mb-4 sm:mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Tile Catalog</h1>
         </div>
@@ -104,6 +101,7 @@ export default function CatalogPage() {
             editMode={false}
           />
         )}
+        </div>
       </div>
 
       {/* Bottom Navigation */}

@@ -66,6 +66,70 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+    const userId = getUserIdFromToken(token)
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
+    const tileId = params.id
+
+    if (!tileId) {
+      return NextResponse.json({ error: 'Tile ID is required' }, { status: 400 })
+    }
+
+    const body = await request.json()
+    const { name, size, price } = body
+
+    const updateData: any = {}
+
+    if (name !== undefined) {
+      updateData.name = name
+    }
+
+    if (size !== undefined) {
+      updateData.size = size
+    }
+
+    if (price !== undefined && price !== null) {
+      updateData.price = price
+    }
+
+    updateData.updated_at = new Date().toISOString()
+
+    const supabase = getSupabaseClient(token)
+
+    const { data, error } = await supabase
+      .from('tiles')
+      .update(updateData)
+      .eq('id', tileId)
+      .eq('user_id', userId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating tile:', error)
+      return NextResponse.json({ error: 'Failed to update tile' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, tile: data }, { status: 200 })
+  } catch (err) {
+    console.error('PATCH /api/tiles/[id] error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
