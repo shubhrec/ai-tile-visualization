@@ -56,6 +56,28 @@ export default function ChatPage() {
     loadChatData()
   }, [chatId])
 
+  useEffect(() => {
+    const savedHome = sessionStorage.getItem('selectedHome')
+    if (savedHome) {
+      try {
+        setSelectedHome(JSON.parse(savedHome))
+        sessionStorage.removeItem('selectedHome')
+      } catch (err) {
+        console.error('Failed to parse saved home', err)
+      }
+    }
+
+    const savedTile = sessionStorage.getItem('selectedTile')
+    if (savedTile) {
+      try {
+        setSelectedTile(JSON.parse(savedTile))
+        sessionStorage.removeItem('selectedTile')
+      } catch (err) {
+        console.error('Failed to parse saved tile', err)
+      }
+    }
+  }, [])
+
   const loadChatData = async () => {
     try {
       const res = await secureFetch(`/api/chats/${chatId}`)

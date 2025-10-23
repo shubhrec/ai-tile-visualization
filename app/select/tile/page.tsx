@@ -64,9 +64,13 @@ export default function SelectTilePage() {
   }
 
   const handleConfirm = () => {
-    if (selectedId) {
+    const selectedTileObj = tiles.find(t => t.id === selectedId)
+    if (selectedTileObj) {
+      sessionStorage.setItem('selectedTile', JSON.stringify(selectedTileObj))
       mockStore.setSelectedTile(selectedId)
       router.back()
+    } else {
+      toast.error('Please select a tile before confirming')
     }
   }
 
