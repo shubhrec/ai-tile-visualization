@@ -6,7 +6,6 @@ import { secureFetch } from '@/lib/api'
 import { mockStore } from '@/lib/mockStore'
 import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
-import ImageGrid from '@/components/ImageGrid'
 import UploadButton from '@/components/UploadButton'
 import BackButton from '@/components/BackButton'
 import { Camera, Check } from 'lucide-react'
@@ -105,32 +104,29 @@ export default function SelectTilePage() {
             <p className="text-sm text-gray-400 mt-2">Upload your first tile to get started</p>
           </div>
         ) : (
-          <div className="relative mb-6">
-            <ImageGrid
-              items={tiles.map(tile => ({
-                id: tile.id,
-                name: tile.name,
-                imageUrl: tile.image_url
-              }))}
-              onItemClick={setSelectedId}
-            />
-            {selectedId && tiles.map(tile =>
-              tile.id === selectedId && (
-                <div key={tile.id} className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {tiles.map(t => (
-                      <div key={t.id} className={`aspect-square ${t.id === selectedId ? 'ring-4 ring-blue-500 rounded-lg' : ''}`}>
-                        {t.id === selectedId && (
-                          <div className="absolute top-2 right-2 bg-blue-600 text-white p-2 rounded-full">
-                            <Check className="w-5 h-5" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+            {tiles.map((tile) => (
+              <button
+                key={tile.id}
+                onClick={() => setSelectedId(tile.id)}
+                className={`relative aspect-square rounded-lg overflow-hidden bg-gray-100 transition-all ${
+                  selectedId === tile.id
+                    ? 'ring-4 ring-blue-500'
+                    : 'hover:ring-2 hover:ring-gray-300'
+                }`}
+              >
+                <img
+                  src={tile.image_url}
+                  alt={tile.name || 'Tile'}
+                  className="w-full h-full object-cover"
+                />
+                {selectedId === tile.id && (
+                  <div className="absolute top-2 right-2 bg-blue-600 text-white p-2 rounded-full">
+                    <Check className="w-5 h-5" />
                   </div>
-                </div>
-              )
-            )}
+                )}
+              </button>
+            ))}
           </div>
         )}
 
