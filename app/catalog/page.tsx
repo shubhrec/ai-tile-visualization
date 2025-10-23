@@ -14,6 +14,9 @@ interface Tile {
   id: string
   name: string
   image_url: string
+  size?: string
+  price?: number
+  add_catalog?: boolean
   created_at: string
 }
 
@@ -23,6 +26,7 @@ export default function CatalogPage() {
   const [tiles, setTiles] = useState<Tile[]>([])
   const [loading, setLoading] = useState(true)
   const [showUploadModal, setShowUploadModal] = useState(false)
+  const [editingTempTile, setEditingTempTile] = useState<Tile | null>(null)
 
   useEffect(() => {
     async function loadTiles() {
@@ -54,6 +58,26 @@ export default function CatalogPage() {
     }
   }
 
+  const handleNewChat = async () => {
+    try {
+      const res = await secureFetch('/api/chats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        router.push(`/chat/${data.chat.id}`)
+      } else {
+        toast.error('Failed to create chat')
+      }
+    } catch (err) {
+      console.error('Create chat error:', err)
+      toast.error('Failed to create chat')
+    }
+  }
+
   const handleDelete = async (tileId: string) => {
     const confirmDelete = window.confirm('Are you sure you want to delete this tile?')
     if (!confirmDelete) return
@@ -66,6 +90,40 @@ export default function CatalogPage() {
     } catch (err) {
       console.error('Delete error:', err)
       toast.error('Failed to delete tile')
+    }
+  }
+
+  const handleAddToCatalog = async (tile: Tile) => {
+    setEditingTempTile(tile)
+  }
+
+  const handleSaveTempTile = async () => {
+    if (!editingTempTile) return
+
+    try {
+      const res = await secureFetch(`/api/tiles/${editingTempTile.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingTempTile.name,
+          size: editingTempTile.size,
+          price: editingTempTile.price,
+          add_catalog: true,
+        }),
+      })
+
+      if (res.ok) {
+        toast.success('Tile added to catalog')
+        setEditingTempTile(null)
+        const tilesRes = await secureFetch('/api/tiles')
+        const data = await tilesRes.json()
+        setTiles(data.tiles || [])
+      } else {
+        toast.error('Failed to update tile')
+      }
+    } catch (err) {
+      console.error('Update error:', err)
+      toast.error('Failed to update tile')
     }
   }
 
@@ -89,17 +147,42 @@ export default function CatalogPage() {
             <p className="text-sm text-gray-400 mt-2">Upload your first tile to get started</p>
           </div>
         ) : (
-          <ImageGrid
-            items={tiles.map(tile => ({
-              id: tile.id,
-              name: tile.name,
-              imageUrl: tile.image_url
-            }))}
-            onItemClick={handleTileClick}
-            onDelete={handleDelete}
-            showDelete={false}
-            editMode={false}
-          />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {tiles.map(tile => (
+              <div
+                key={tile.id}
+                className="relative group cursor-pointer"
+                onClick={() => {
+                  if (tile.add_catalog === false) {
+                    handleAddToCatalog(tile)
+                  } else {
+                    handleTileClick(tile.id)
+                  }
+                }}
+              >
+                <div className={`relative aspect-square rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow ${
+                  tile.add_catalog === false ? 'opacity-50' : ''
+                }`}>
+                  <img
+                    src={tile.image_url}
+                    alt={tile.name}
+                    className="w-full h-full object-cover"
+                    style={tile.add_catalog === false ? { filter: 'blur(4px)' } : {}}
+                  />
+                  {tile.add_catalog === false && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                      <div className="bg-white px-4 py-2 rounded-lg font-semibold text-sm">
+                        Add Details
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-2 text-sm font-medium text-gray-700 truncate">
+                  {tile.name || 'Untitled'}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
         </div>
       </div>
@@ -107,7 +190,7 @@ export default function CatalogPage() {
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg py-3 flex justify-around items-center z-50">
         <button
-          onClick={() => console.log('Open Chats')}
+          onClick={() => router.push('/chat')}
           className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors"
         >
           <MessageCircle className="w-6 h-6" />
@@ -115,7 +198,7 @@ export default function CatalogPage() {
         </button>
 
         <button
-          onClick={() => console.log('New Chat')}
+          onClick={handleNewChat}
           className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors"
         >
           <PlusCircle className="w-6 h-6" />
@@ -136,6 +219,65 @@ export default function CatalogPage() {
         onClose={() => setShowUploadModal(false)}
         onSuccess={handleUploadSuccess}
       />
+
+      {editingTempTile && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-4 text-center">Add Tile Details</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block mb-2 text-sm font-medium text-gray-700">Tile Name</label>
+                <input
+                  type="text"
+                  value={editingTempTile.name || ''}
+                  onChange={(e) => setEditingTempTile({ ...editingTempTile, name: e.target.value })}
+                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 text-sm font-medium text-gray-700">Tile Size</label>
+                <input
+                  type="text"
+                  value={editingTempTile.size || ''}
+                  onChange={(e) => setEditingTempTile({ ...editingTempTile, size: e.target.value })}
+                  placeholder="e.g. 600x600 mm"
+                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 text-sm font-medium text-gray-700">Tile Price (₹)</label>
+                <input
+                  type="number"
+                  value={editingTempTile.price || ''}
+                  onChange={(e) => setEditingTempTile({ ...editingTempTile, price: parseFloat(e.target.value) || 0 })}
+                  placeholder="e.g. 45.50"
+                  step="0.01"
+                  min="0"
+                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditingTempTile(null)}
+                className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveTempTile}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Add to Catalog
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

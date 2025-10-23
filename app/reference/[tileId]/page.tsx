@@ -141,6 +141,26 @@ export default function ReferencePage() {
     }
   }
 
+  const handleNewChat = async () => {
+    try {
+      const res = await secureFetch('/api/chats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        router.push(`/chat/${data.chat.id}`)
+      } else {
+        toast.error('Failed to create chat')
+      }
+    } catch (err) {
+      console.error('Create chat error:', err)
+      toast.error('Failed to create chat')
+    }
+  }
+
 
   if (loading) {
     return (
@@ -210,7 +230,7 @@ export default function ReferencePage() {
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg py-3 flex justify-around items-center z-50">
         <button
-          onClick={() => console.log('Open Chats')}
+          onClick={() => router.push('/chat')}
           className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors"
         >
           <MessageCircle className="w-6 h-6" />
@@ -218,7 +238,7 @@ export default function ReferencePage() {
         </button>
 
         <button
-          onClick={() => console.log('New Chat')}
+          onClick={handleNewChat}
           className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors"
         >
           <PlusCircle className="w-6 h-6" />

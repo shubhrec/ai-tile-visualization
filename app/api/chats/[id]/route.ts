@@ -40,28 +40,36 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const tileId = params.id
-
-    if (!tileId) {
-      return NextResponse.json({ error: 'Tile ID is required' }, { status: 400 })
-    }
-
+    const chatId = params.id
     const supabase = getSupabaseClient(token)
 
-    const { data, error } = await supabase
-      .from('tiles')
+    const { data: chat, error: chatError } = await supabase
+      .from('chats')
       .select('*')
-      .eq('id', tileId)
+      .eq('id', chatId)
       .eq('user_id', userId)
       .single()
 
-    if (error || !data) {
-      return NextResponse.json({ error: 'Tile not found' }, { status: 404 })
+    if (chatError || !chat) {
+      return NextResponse.json({ error: 'Chat not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ tile: data }, { status: 200 })
+    const { data: images, error: imagesError } = await supabase
+      .from('generated_images')
+      .select('*')
+      .eq('chat_id', chatId)
+      .order('created_at', { ascending: true })
+
+    if (imagesError) {
+      console.error('Error fetching generated images:', imagesError)
+    }
+
+    return NextResponse.json({
+      chat,
+      images: images || []
+    }, { status: 200 })
   } catch (err) {
-    console.error('GET /api/tiles/[id] error:', err)
+    console.error('GET /api/chats/[id] error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -83,53 +91,31 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const tileId = params.id
-
-    if (!tileId) {
-      return NextResponse.json({ error: 'Tile ID is required' }, { status: 400 })
-    }
-
+    const chatId = params.id
     const body = await request.json()
-    const { name, size, price, add_catalog } = body
-
-    const updateData: any = {}
-
-    if (name !== undefined) {
-      updateData.name = name
-    }
-
-    if (size !== undefined) {
-      updateData.size = size
-    }
-
-    if (price !== undefined && price !== null) {
-      updateData.price = price
-    }
-
-    if (add_catalog !== undefined) {
-      updateData.add_catalog = add_catalog
-    }
-
-    updateData.updated_at = new Date().toISOString()
+    const { name } = body
 
     const supabase = getSupabaseClient(token)
 
     const { data, error } = await supabase
-      .from('tiles')
-      .update(updateData)
-      .eq('id', tileId)
+      .from('chats')
+      .update({
+        name,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', chatId)
       .eq('user_id', userId)
       .select()
       .single()
 
     if (error) {
-      console.error('Error updating tile:', error)
-      return NextResponse.json({ error: 'Failed to update tile' }, { status: 500 })
+      console.error('Error updating chat:', error)
+      return NextResponse.json({ error: 'Failed to update chat' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, tile: data }, { status: 200 })
+    return NextResponse.json({ success: true, chat: data }, { status: 200 })
   } catch (err) {
-    console.error('PATCH /api/tiles/[id] error:', err)
+    console.error('PATCH /api/chats/[id] error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -151,28 +137,23 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const tileId = params.id
-
-    if (!tileId) {
-      return NextResponse.json({ error: 'Tile ID is required' }, { status: 400 })
-    }
-
+    const chatId = params.id
     const supabase = getSupabaseClient(token)
 
     const { error } = await supabase
-      .from('tiles')
+      .from('chats')
       .delete()
-      .eq('id', tileId)
+      .eq('id', chatId)
       .eq('user_id', userId)
 
     if (error) {
-      console.error('Error deleting tile:', error)
-      return NextResponse.json({ error: 'Failed to delete tile' }, { status: 500 })
+      console.error('Error deleting chat:', error)
+      return NextResponse.json({ error: 'Failed to delete chat' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true }, { status: 200 })
   } catch (err) {
-    console.error('DELETE /api/tiles/[id] error:', err)
+    console.error('DELETE /api/chats/[id] error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

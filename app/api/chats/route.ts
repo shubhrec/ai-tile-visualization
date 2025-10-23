@@ -40,19 +40,19 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseClient(token)
 
     const { data, error } = await supabase
-      .from('tiles')
+      .from('chats')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching tiles:', error)
-      return NextResponse.json({ error: 'Failed to fetch tiles' }, { status: 500 })
+      console.error('Error fetching chats:', error)
+      return NextResponse.json({ error: 'Failed to fetch chats' }, { status: 500 })
     }
 
-    return NextResponse.json({ tiles: data || [] })
+    return NextResponse.json({ chats: data || [] }, { status: 200 })
   } catch (err) {
-    console.error('GET /api/tiles error:', err)
+    console.error('GET /api/chats error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -72,43 +72,35 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { image_url, name, size, price, add_catalog } = body
-
-    if (!image_url) {
-      return NextResponse.json({ error: 'image_url is required' }, { status: 400 })
-    }
+    const { name } = body
 
     const supabase = getSupabaseClient(token)
 
-    const insertData: any = {
-      user_id: userId,
-      image_url,
-      name: name || '',
-      add_catalog: add_catalog !== undefined ? add_catalog : true,
-    }
-
-    if (size) {
-      insertData.size = size
-    }
-
-    if (price !== undefined && price !== null) {
-      insertData.price = price
-    }
+    const chatName = name || `Chat - ${new Date().toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true
+    })}`
 
     const { data, error } = await supabase
-      .from('tiles')
-      .insert(insertData)
+      .from('chats')
+      .insert({
+        user_id: userId,
+        name: chatName,
+      })
       .select()
       .single()
 
     if (error) {
-      console.error('Error creating tile:', error)
-      return NextResponse.json({ error: 'Failed to create tile' }, { status: 500 })
+      console.error('Error creating chat:', error)
+      return NextResponse.json({ error: 'Failed to create chat' }, { status: 500 })
     }
 
-    return NextResponse.json({ tile: data }, { status: 201 })
+    return NextResponse.json({ chat: data }, { status: 201 })
   } catch (err) {
-    console.error('POST /api/tiles error:', err)
+    console.error('POST /api/chats error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
