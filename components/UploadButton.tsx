@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, forwardRef, useImperativeHandle } from 'react'
 import { Upload, Loader2 } from 'lucide-react'
 import { uploadImage } from '@/lib/api'
 import { toast } from 'sonner'
@@ -12,9 +12,21 @@ interface UploadButtonProps {
   bucket?: 'tiles' | 'homes'
 }
 
-export default function UploadButton({ onUpload, label = 'Upload', variant = 'primary', bucket = 'tiles' }: UploadButtonProps) {
+export interface UploadButtonRef {
+  triggerUpload: () => void
+}
+
+const UploadButton = forwardRef<UploadButtonRef, UploadButtonProps>(({ onUpload, label = 'Upload', variant = 'primary', bucket = 'tiles' }, ref) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
+
+  useImperativeHandle(ref, () => ({
+    triggerUpload: () => {
+      if (!isUploading) {
+        inputRef.current?.click()
+      }
+    }
+  }))
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -77,4 +89,8 @@ export default function UploadButton({ onUpload, label = 'Upload', variant = 'pr
       </button>
     </>
   )
-}
+})
+
+UploadButton.displayName = 'UploadButton'
+
+export default UploadButton

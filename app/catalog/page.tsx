@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { secureFetch } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar'
 import ImageGrid from '@/components/ImageGrid'
 import UploadButton from '@/components/UploadButton'
 import BackButton from '@/components/BackButton'
+import { MessageCircle, PlusCircle, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Tile {
@@ -25,7 +26,7 @@ export default function CatalogPage() {
   const [showUpload, setShowUpload] = useState(false)
   const [tileName, setTileName] = useState('')
   const [uploadedUrl, setUploadedUrl] = useState('')
-  const [editMode, setEditMode] = useState(false)
+  const uploadButtonRef = useRef<{ triggerUpload: () => void }>(null)
 
   useEffect(() => {
     async function loadTiles() {
@@ -100,19 +101,12 @@ export default function CatalogPage() {
         <div className="mb-4">
           <BackButton />
         </div>
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <div className="mb-4 sm:mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Tile Catalog</h1>
-          <div className="flex gap-2">
-            {tiles.length > 0 && (
-              <button
-                onClick={() => setEditMode(!editMode)}
-                className="px-3 py-2 rounded-md border text-sm bg-gray-100 hover:bg-gray-200 transition-colors"
-              >
-                {editMode ? 'Done' : 'Edit'}
-              </button>
-            )}
-            <UploadButton onUpload={handleUpload} label="Upload Tile" />
-          </div>
+        </div>
+
+        <div className="hidden">
+          <UploadButton ref={uploadButtonRef} onUpload={handleUpload} label="Upload Tile" />
         </div>
 
         {showUpload && (
@@ -169,10 +163,37 @@ export default function CatalogPage() {
             }))}
             onItemClick={handleTileClick}
             onDelete={handleDelete}
-            showDelete={true}
-            editMode={editMode}
+            showDelete={false}
+            editMode={false}
           />
         )}
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg py-3 flex justify-around items-center z-50">
+        <button
+          onClick={() => console.log('Open Chats')}
+          className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors"
+        >
+          <MessageCircle className="w-6 h-6" />
+          <span className="text-xs mt-1">Chats</span>
+        </button>
+
+        <button
+          onClick={() => console.log('New Chat')}
+          className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors"
+        >
+          <PlusCircle className="w-6 h-6" />
+          <span className="text-xs mt-1">New Chat</span>
+        </button>
+
+        <button
+          onClick={() => uploadButtonRef.current?.triggerUpload()}
+          className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors"
+        >
+          <Upload className="w-6 h-6" />
+          <span className="text-xs mt-1">Upload Tile</span>
+        </button>
       </div>
     </div>
   )

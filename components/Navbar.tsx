@@ -1,16 +1,15 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { LogOut, Sparkles } from 'lucide-react'
+import { ArrowLeft, Grid, LogOut } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
 
-  const isLoginPage = pathname === '/login'
+  const isAuthPage = pathname === '/login' || pathname === '/signup'
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -19,44 +18,31 @@ export default function Navbar() {
     router.push('/login')
   }
 
+  if (isAuthPage) return null
+
   return (
-    <nav className="border-b bg-white">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-14 sm:h-16 items-center">
-          <div className="flex items-center gap-4 sm:gap-6">
-            <Link href="/catalog" className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
-              AI Tile Visualizer
-            </Link>
-            <div className="flex items-center gap-3 sm:gap-4">
-              <Link href="/catalog" className="text-sm text-gray-700 hover:text-blue-600 transition-colors">
-                Tiles
-              </Link>
-              <Link href="/homes" className="text-sm text-gray-700 hover:text-blue-600 transition-colors">
-                My Homes
-              </Link>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            {!isLoginPage && (
-              <button
-                onClick={() => router.push('/generate')}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span className="hidden sm:inline">Generate Visualization</span>
-                <span className="sm:hidden">Generate</span>
-              </button>
-            )}
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 text-sm text-gray-700 hover:text-gray-900"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
+    <nav className="w-full bg-white shadow-sm py-3 px-4 flex items-center justify-between sticky top-0 z-40">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => router.back()}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-gray-700" />
+        </button>
+
+        <div className="flex items-center gap-2">
+          <Grid className="w-5 h-5 text-blue-600" />
+          <span className="text-base font-semibold text-gray-800">TileViz</span>
         </div>
       </div>
+
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+      >
+        <LogOut className="w-4 h-4" />
+        <span className="hidden sm:inline">Logout</span>
+      </button>
     </nav>
   )
 }
