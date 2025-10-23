@@ -52,22 +52,62 @@ export default function GeneratePage() {
     }
   }
 
-  const handleTileUpload = (file: File, url: string) => {
-    setSelectedTile({
-      id: 'temp-' + Date.now(),
-      name: file.name,
-      image_url: url
-    })
-    setShowTileSelector(false)
+  const handleTileUpload = async (file: File, url: string) => {
+    try {
+      const res = await secureFetch('/api/tiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_url: url,
+          name: file.name || 'Untitled Tile',
+        }),
+      })
+      const data = await res.json()
+      if (data.tile) {
+        setSelectedTile({
+          id: data.tile.id,
+          name: data.tile.name,
+          image_url: data.tile.image_url
+        })
+        setShowTileSelector(false)
+        toast.success('Tile added successfully')
+        await loadCatalogs()
+      } else {
+        throw new Error('Failed to insert tile')
+      }
+    } catch (err) {
+      console.error('Error adding tile:', err)
+      toast.error('Failed to add tile to database')
+    }
   }
 
-  const handleHomeUpload = (file: File, url: string) => {
-    setSelectedHome({
-      id: 'temp-' + Date.now(),
-      name: file.name,
-      image_url: url
-    })
-    setShowHomeSelector(false)
+  const handleHomeUpload = async (file: File, url: string) => {
+    try {
+      const res = await secureFetch('/api/homes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_url: url,
+          name: file.name || 'Untitled Home',
+        }),
+      })
+      const data = await res.json()
+      if (data.success && data.home) {
+        setSelectedHome({
+          id: data.home.id,
+          name: data.home.name,
+          image_url: data.home.image_url
+        })
+        setShowHomeSelector(false)
+        toast.success('Home added successfully')
+        await loadCatalogs()
+      } else {
+        throw new Error('Failed to insert home')
+      }
+    } catch (err) {
+      console.error('Error adding home:', err)
+      toast.error('Failed to add home to database')
+    }
   }
 
   const handleSelectTile = (tile: Tile) => {

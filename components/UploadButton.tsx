@@ -6,7 +6,7 @@ import { uploadImage } from '@/lib/api'
 import { toast } from 'sonner'
 
 interface UploadButtonProps {
-  onUpload: (file: File, url: string) => void
+  onUpload: (file: File, url: string) => void | Promise<void>
   label?: string
   variant?: 'primary' | 'secondary'
   bucket?: 'tiles' | 'homes'
@@ -37,7 +37,7 @@ export default function UploadButton({ onUpload, label = 'Upload', variant = 'pr
     try {
       const url = await uploadImage(file, bucket)
       toast.success('Image uploaded successfully!', { id: toastId })
-      onUpload(file, url)
+      await onUpload(file, url)
       if (inputRef.current) {
         inputRef.current.value = ''
       }
