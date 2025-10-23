@@ -1,48 +1,93 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
+import { secureFetch } from '@/lib/api'
 import Navbar from '@/components/Navbar'
 import BackButton from '@/components/BackButton'
 import UploadButton from '@/components/UploadButton'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, X } from 'lucide-react'
 import { toast } from 'sonner'
+
+interface Tile {
+  id: string
+  name: string
+  image_url: string
+}
+
+interface Home {
+  id: string
+  name: string
+  image_url: string
+}
 
 export default function GeneratePage() {
   useAuth()
   const router = useRouter()
-  const [tileUrl, setTileUrl] = useState('')
-  const [homeUrl, setHomeUrl] = useState('')
-  const [tileName, setTileName] = useState('')
-  const [homeName, setHomeName] = useState('')
+  const [selectedTile, setSelectedTile] = useState<Tile | null>(null)
+  const [selectedHome, setSelectedHome] = useState<Home | null>(null)
+  const [tiles, setTiles] = useState<Tile[]>([])
+  const [homes, setHomes] = useState<Home[]>([])
+  const [showTileSelector, setShowTileSelector] = useState(false)
+  const [showHomeSelector, setShowHomeSelector] = useState(false)
+
+  useEffect(() => {
+    loadCatalogs()
+  }, [])
+
+  async function loadCatalogs() {
+    try {
+      const [tilesRes, homesRes] = await Promise.all([
+        secureFetch('/api/tiles'),
+        secureFetch('/api/homes')
+      ])
+      const tilesData = await tilesRes.json()
+      const homesData = await homesRes.json()
+      setTiles(tilesData.tiles || [])
+      setHomes(homesData.homes || [])
+    } catch (err) {
+      console.error('Failed to load catalogs', err)
+      toast.error('Failed to load catalogs')
+    }
+  }
 
   const handleTileUpload = (file: File, url: string) => {
-    setTileUrl(url)
-    setTileName(file.name)
+    setSelectedTile({
+      id: 'temp-' + Date.now(),
+      name: file.name,
+      image_url: url
+    })
+    setShowTileSelector(false)
   }
 
   const handleHomeUpload = (file: File, url: string) => {
-    setHomeUrl(url)
-    setHomeName(file.name)
+    setSelectedHome({
+      id: 'temp-' + Date.now(),
+      name: file.name,
+      image_url: url
+    })
+    setShowHomeSelector(false)
+  }
+
+  const handleSelectTile = (tile: Tile) => {
+    setSelectedTile(tile)
+    setShowTileSelector(false)
+  }
+
+  const handleSelectHome = (home: Home) => {
+    setSelectedHome(home)
+    setShowHomeSelector(false)
   }
 
   const handleGenerate = () => {
-    if (!tileUrl || !homeUrl) {
-      toast.error('Please upload both a tile and a home image')
+    if (!selectedTile || !selectedHome) {
+      toast.error('Please select both a tile and a home image')
       return
     }
 
-    sessionStorage.setItem('selectedTile', JSON.stringify({
-      id: 'temp',
-      name: tileName || 'Uploaded Tile',
-      image_url: tileUrl
-    }))
-    sessionStorage.setItem('selectedHome', JSON.stringify({
-      id: 'temp',
-      name: homeName || 'Uploaded Home',
-      image_url: homeUrl
-    }))
+    sessionStorage.setItem('selectedTile', JSON.stringify(selectedTile))
+    sessionStorage.setItem('selectedHome', JSON.stringify(selectedHome))
 
     router.push('/chat')
   }
@@ -66,19 +111,21 @@ export default function GeneratePage() {
 
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Upload Tile Image</h2>
-              {tileUrl ? (
+              <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Select Tile</h2>
+              {selectedTile ? (
                 <div className="flex flex-col sm:flex-row gap-4 items-start p-4 border rounded-lg bg-gray-50">
-                  <img src={tileUrl} alt="Tile preview" className="w-full sm:w-32 h-32 object-cover rounded-lg" />
+                  <img src={selectedTile.image_url} alt="Tile preview" className="w-full sm:w-32 h-32 object-cover rounded-lg" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-700 mb-3">{tileName}</p>
+                    <p className="text-sm font-medium text-gray-700 mb-3">{selectedTile.name}</p>
                     <div className="flex gap-2">
-                      <UploadButton onUpload={handleTileUpload} label="Replace" bucket="tiles" />
                       <button
-                        onClick={() => {
-                          setTileUrl('')
-                          setTileName('')
-                        }}
+                        onClick={() => setShowTileSelector(true)}
+                        className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                      >
+                        Change
+                      </button>
+                      <button
+                        onClick={() => setSelectedTile(null)}
                         className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                       >
                         Remove
@@ -87,27 +134,37 @@ export default function GeneratePage() {
                   </div>
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <p className="text-gray-500 mb-4">Upload a tile image</p>
-                  <UploadButton onUpload={handleTileUpload} label="Upload Tile" bucket="tiles" />
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                  <p className="text-gray-600 mb-4 text-center">Choose a tile image</p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <UploadButton onUpload={handleTileUpload} label="Upload New" bucket="tiles" />
+                    <button
+                      onClick={() => setShowTileSelector(true)}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                    >
+                      Select Existing
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">2. Upload Home Image</h2>
-              {homeUrl ? (
+              <h2 className="text-lg font-semibold text-gray-900 mb-3">2. Select Home</h2>
+              {selectedHome ? (
                 <div className="flex flex-col sm:flex-row gap-4 items-start p-4 border rounded-lg bg-gray-50">
-                  <img src={homeUrl} alt="Home preview" className="w-full sm:w-32 h-32 object-cover rounded-lg" />
+                  <img src={selectedHome.image_url} alt="Home preview" className="w-full sm:w-32 h-32 object-cover rounded-lg" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-700 mb-3">{homeName}</p>
+                    <p className="text-sm font-medium text-gray-700 mb-3">{selectedHome.name}</p>
                     <div className="flex gap-2">
-                      <UploadButton onUpload={handleHomeUpload} label="Replace" bucket="homes" />
                       <button
-                        onClick={() => {
-                          setHomeUrl('')
-                          setHomeName('')
-                        }}
+                        onClick={() => setShowHomeSelector(true)}
+                        className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                      >
+                        Change
+                      </button>
+                      <button
+                        onClick={() => setSelectedHome(null)}
                         className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                       >
                         Remove
@@ -116,9 +173,17 @@ export default function GeneratePage() {
                   </div>
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <p className="text-gray-500 mb-4">Upload a home image</p>
-                  <UploadButton onUpload={handleHomeUpload} label="Upload Home" bucket="homes" />
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                  <p className="text-gray-600 mb-4 text-center">Choose a home image</p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <UploadButton onUpload={handleHomeUpload} label="Upload New" bucket="homes" />
+                    <button
+                      onClick={() => setShowHomeSelector(true)}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                    >
+                      Select Existing
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -126,21 +191,103 @@ export default function GeneratePage() {
             <div className="pt-4">
               <button
                 onClick={handleGenerate}
-                disabled={!tileUrl || !homeUrl}
+                disabled={!selectedTile || !selectedHome}
                 className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300"
               >
                 <Sparkles className="w-5 h-5" />
                 Generate Visualization
               </button>
-              {(!tileUrl || !homeUrl) && (
+              {(!selectedTile || !selectedHome) && (
                 <p className="text-sm text-gray-500 text-center mt-2">
-                  Upload both images to continue
+                  Select both images to continue
                 </p>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {showTileSelector && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">Select a Tile</h2>
+              <button
+                onClick={() => setShowTileSelector(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              {tiles.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">No tiles available</p>
+                  <p className="text-sm text-gray-400 mt-2">Upload tiles to your catalog first</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {tiles.map(tile => (
+                    <button
+                      key={tile.id}
+                      onClick={() => handleSelectTile(tile)}
+                      className="flex flex-col items-center gap-2 p-3 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
+                    >
+                      <img
+                        src={tile.image_url}
+                        alt={tile.name}
+                        className="w-full h-32 object-cover rounded"
+                      />
+                      <p className="text-sm font-medium text-gray-700 text-center truncate w-full">{tile.name}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showHomeSelector && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">Select a Home</h2>
+              <button
+                onClick={() => setShowHomeSelector(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              {homes.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">No homes available</p>
+                  <p className="text-sm text-gray-400 mt-2">Upload homes to your catalog first</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {homes.map(home => (
+                    <button
+                      key={home.id}
+                      onClick={() => handleSelectHome(home)}
+                      className="flex flex-col items-center gap-2 p-3 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
+                    >
+                      <img
+                        src={home.image_url}
+                        alt={home.name}
+                        className="w-full h-32 object-cover rounded"
+                      />
+                      <p className="text-sm font-medium text-gray-700 text-center truncate w-full">{home.name}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
