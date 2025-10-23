@@ -71,16 +71,19 @@ export default function GeneratePage() {
                 <div className="flex flex-col sm:flex-row gap-4 items-start p-4 border rounded-lg bg-gray-50">
                   <img src={tileUrl} alt="Tile preview" className="w-full sm:w-32 h-32 object-cover rounded-lg" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-700 mb-2">{tileName}</p>
-                    <button
-                      onClick={() => {
-                        setTileUrl('')
-                        setTileName('')
-                      }}
-                      className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
-                    >
-                      Remove
-                    </button>
+                    <p className="text-sm font-medium text-gray-700 mb-3">{tileName}</p>
+                    <div className="flex gap-2">
+                      <UploadButton onUpload={handleTileUpload} label="Replace" bucket="tiles" />
+                      <button
+                        onClick={() => {
+                          setTileUrl('')
+                          setTileName('')
+                        }}
+                        className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -97,16 +100,19 @@ export default function GeneratePage() {
                 <div className="flex flex-col sm:flex-row gap-4 items-start p-4 border rounded-lg bg-gray-50">
                   <img src={homeUrl} alt="Home preview" className="w-full sm:w-32 h-32 object-cover rounded-lg" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-700 mb-2">{homeName}</p>
-                    <button
-                      onClick={() => {
-                        setHomeUrl('')
-                        setHomeName('')
-                      }}
-                      className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
-                    >
-                      Remove
-                    </button>
+                    <p className="text-sm font-medium text-gray-700 mb-3">{homeName}</p>
+                    <div className="flex gap-2">
+                      <UploadButton onUpload={handleHomeUpload} label="Replace" bucket="homes" />
+                      <button
+                        onClick={() => {
+                          setHomeUrl('')
+                          setHomeName('')
+                        }}
+                        className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
