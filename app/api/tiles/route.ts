@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { image_url, name } = body
+    const { image_url, name, size, price } = body
 
     if (!image_url) {
       return NextResponse.json({ error: 'image_url is required' }, { status: 400 })
@@ -80,13 +80,23 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabaseClient(token)
 
+    const insertData: any = {
+      user_id: userId,
+      image_url,
+      name: name || '',
+    }
+
+    if (size) {
+      insertData.size = size
+    }
+
+    if (price !== undefined && price !== null) {
+      insertData.price = price
+    }
+
     const { data, error } = await supabase
       .from('tiles')
-      .insert({
-        user_id: userId,
-        image_url,
-        name: name || '',
-      })
+      .insert(insertData)
       .select()
       .single()
 
