@@ -230,7 +230,7 @@ export default function ReferencePage() {
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg py-3 flex justify-around items-center z-50">
         <button
-          onClick={() => router.push('/chat')}
+          onClick={() => router.push('/chats')}
           className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors"
         >
           <MessageCircle className="w-6 h-6" />
