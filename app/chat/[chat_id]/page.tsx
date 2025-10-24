@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { secureFetch } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import { ArrowLeft, Image as ImageIcon, Trash2, Check, Loader2 } from 'lucide-react'
+import { ArrowLeft, Image as ImageIcon, Trash2, Check, Loader2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Chat {
@@ -51,6 +51,8 @@ export default function ChatPage() {
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null)
   const [selectedHome, setSelectedHome] = useState<Home | null>(null)
   const [prompt, setPrompt] = useState('')
+  const [viewImage, setViewImage] = useState<string | null>(null)
+  const [viewImageData, setViewImageData] = useState<GeneratedImage | null>(null)
 
   useEffect(() => {
     loadChatData()
@@ -157,6 +159,38 @@ export default function ChatPage() {
     }
   }
 
+  const handleAddReference = async (imageId: string) => {
+    if (!selectedTile?.id) {
+      toast.error('Please select a tile first.')
+      return
+    }
+
+    try {
+      const res = await secureFetch(`/api/generated/${imageId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tile_id: selectedTile.id }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success('Added to tile gallery!')
+        setImages(prev =>
+          prev.map(img => (img.id === imageId ? { ...img, tile_id: selectedTile.id } : img))
+        )
+      } else {
+        toast.error('Failed to add reference.')
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error('Error adding reference.')
+    }
+  }
+
+  const handleImageClick = (image: GeneratedImage) => {
+    setViewImage(image.image_url)
+    setViewImageData(image)
+  }
+
   const handleGenerate = async () => {
     if (!selectedTile || !prompt.trim()) {
       toast.error('Please select a tile and enter a prompt')
@@ -233,7 +267,7 @@ export default function ChatPage() {
 
       <div
         ref={chatAreaRef}
-        className="flex-1 overflow-y-auto p-4"
+        className="flex-1 overflow-y-auto p-4 pb-24"
       >
         {!Array.isArray(images) || images.length === 0 ? (
           <div className="text-center py-20">
@@ -255,20 +289,31 @@ export default function ChatPage() {
                   <img
                     src={image.image_url}
                     alt={image.prompt || 'Generated image'}
-                    className="w-full h-96 object-cover"
+                    className="w-full h-96 object-cover cursor-pointer hover:opacity-90 transition"
+                    onClick={() => handleImageClick(image)}
                   />
                   {image.kept ? (
                     <div className="text-center py-3 bg-green-50 text-green-700 text-sm font-medium">
                       ✓ Saved to gallery
                     </div>
                   ) : (
-                    <div className="flex gap-3 p-3">
+                    <div className="flex gap-2 p-3">
                       <button
                         onClick={() => handleDelete(image.id)}
                         className="flex-1 py-3 bg-red-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 active:opacity-70 transition-opacity"
                       >
                         <Trash2 className="w-5 h-5" />
                         Delete
+                      </button>
+                      <button
+                        onClick={() => handleAddReference(image.id)}
+                        disabled={!selectedTile?.id || !!image.tile_id}
+                        className={`flex-1 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 active:opacity-70 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed ${
+                          image.tile_id ? 'bg-green-100 text-green-600' : 'bg-blue-500 text-white'
+                        }`}
+                      >
+                        <Plus className="w-5 h-5" />
+                        {image.tile_id ? 'Added' : 'Reference'}
                       </button>
                       <button
                         onClick={() => handleKeep(image.id)}
@@ -368,6 +413,40 @@ export default function ChatPage() {
           )}
         </button>
       </div>
+
+      {viewImage && viewImageData && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setViewImage(null)
+            setViewImageData(null)
+          }}
+        >
+          <div className="relative max-w-5xl w-full">
+            <img
+              src={viewImage}
+              alt="Full view"
+              className="max-h-[85vh] w-full rounded-lg shadow-2xl object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="mt-4 text-center">
+              <p className="text-white text-sm">{viewImageData.prompt || 'Generated image'}</p>
+              {viewImageData.tile_id && (
+                <p className="text-gray-300 text-xs mt-1">Tile ID: {viewImageData.tile_id}</p>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                setViewImage(null)
+                setViewImageData(null)
+              }}
+              className="absolute -top-2 -right-2 bg-white text-gray-800 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-gray-100 transition"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
