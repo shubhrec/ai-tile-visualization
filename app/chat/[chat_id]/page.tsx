@@ -247,39 +247,42 @@ export default function ChatPage() {
             </div>
           </div>
         ) : (
-          images.map((image) => (
-            <div key={image.id} className="mb-5">
-              <div className="bg-white rounded-2xl overflow-hidden shadow-md">
-                <img
-                  src={image.image_url}
-                  alt={image.prompt}
-                  className="w-full h-96 object-cover"
-                />
-                {image.kept ? (
-                  <div className="text-center py-3 bg-green-50 text-green-700 text-sm font-medium">
-                    ✓ Saved to gallery
-                  </div>
-                ) : (
-                  <div className="flex gap-3 p-3">
-                    <button
-                      onClick={() => handleDelete(image.id)}
-                      className="flex-1 py-3 bg-red-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 active:opacity-70 transition-opacity"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                      Delete
-                    </button>
-                    <button
-                      onClick={() => handleKeep(image.id)}
-                      className="flex-1 py-3 bg-green-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 active:opacity-70 transition-opacity"
-                    >
-                      <Check className="w-5 h-5" />
-                      Keep
-                    </button>
-                  </div>
-                )}
+          images.filter(Boolean).map((image, idx) => {
+            if (!image?.image_url) return null
+            return (
+              <div key={image.id || idx} className="mb-5">
+                <div className="bg-white rounded-2xl overflow-hidden shadow-md">
+                  <img
+                    src={image.image_url}
+                    alt={image.prompt || 'Generated image'}
+                    className="w-full h-96 object-cover"
+                  />
+                  {image.kept ? (
+                    <div className="text-center py-3 bg-green-50 text-green-700 text-sm font-medium">
+                      ✓ Saved to gallery
+                    </div>
+                  ) : (
+                    <div className="flex gap-3 p-3">
+                      <button
+                        onClick={() => handleDelete(image.id)}
+                        className="flex-1 py-3 bg-red-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 active:opacity-70 transition-opacity"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                        Delete
+                      </button>
+                      <button
+                        onClick={() => handleKeep(image.id)}
+                        className="flex-1 py-3 bg-green-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 active:opacity-70 transition-opacity"
+                      >
+                        <Check className="w-5 h-5" />
+                        Keep
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
         {generating && (
           <div className="text-center py-10">
