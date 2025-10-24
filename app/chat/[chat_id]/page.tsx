@@ -60,8 +60,10 @@ export default function ChatPage() {
     const savedHome = sessionStorage.getItem('selectedHome')
     if (savedHome) {
       try {
-        setSelectedHome(JSON.parse(savedHome))
+        const home = JSON.parse(savedHome)
+        setSelectedHome(home)
         sessionStorage.removeItem('selectedHome')
+        toast.success(`Selected ${home.name || 'Home'} added to chat`)
       } catch (err) {
         console.error('Failed to parse saved home', err)
       }
@@ -70,8 +72,10 @@ export default function ChatPage() {
     const savedTile = sessionStorage.getItem('selectedTile')
     if (savedTile) {
       try {
-        setSelectedTile(JSON.parse(savedTile))
+        const tile = JSON.parse(savedTile)
+        setSelectedTile(tile)
         sessionStorage.removeItem('selectedTile')
+        toast.success(`Selected ${tile.name || 'Tile'} added to chat`)
       } catch (err) {
         console.error('Failed to parse saved tile', err)
       }
@@ -288,7 +292,11 @@ export default function ChatPage() {
       <div className="bg-white p-4 shadow-lg">
         <div className="flex gap-2 mb-3">
           <button
-            onClick={() => router.push('/select/home')}
+            onClick={() => {
+              sessionStorage.removeItem('selectedHome')
+              sessionStorage.removeItem('selectedTile')
+              router.push('/select/home')
+            }}
             className={`flex-1 p-3 rounded-xl border-2 transition-all ${
               selectedHome
                 ? 'bg-blue-50 border-blue-600'
@@ -306,7 +314,11 @@ export default function ChatPage() {
           </button>
 
           <button
-            onClick={() => router.push('/select/tile')}
+            onClick={() => {
+              sessionStorage.removeItem('selectedHome')
+              sessionStorage.removeItem('selectedTile')
+              router.push('/select/tile')
+            }}
             className={`flex-1 p-3 rounded-xl border-2 transition-all ${
               selectedTile
                 ? 'bg-blue-50 border-blue-600'
