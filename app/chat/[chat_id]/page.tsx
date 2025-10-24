@@ -194,7 +194,7 @@ export default function ChatPage() {
     }
   }
 
-  const keptCount = images.filter(img => img.kept).length
+  const keptCount = images.filter(img => img?.kept).length
 
   if (loading) {
     return (
