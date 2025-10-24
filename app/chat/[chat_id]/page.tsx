@@ -22,6 +22,8 @@ interface GeneratedImage {
   image_url: string
   kept: boolean
   created_at: string
+  tile_name?: string
+  tile?: { name: string }
 }
 
 interface Tile {
@@ -93,7 +95,12 @@ export default function ChatPage() {
 
       const data = await res.json()
       setChat(data.chat)
-      setImages(data.images || [])
+      setImages(
+        (data.images || []).map((img: any) => ({
+          ...img,
+          tile_name: img.tile_name || (img.tile?.name ?? null),
+        }))
+      )
     } catch (err) {
       console.error('Failed to load chat', err)
       toast.error('Failed to load chat')
@@ -292,38 +299,39 @@ export default function ChatPage() {
                     className="w-full h-96 object-cover cursor-pointer hover:opacity-90 transition"
                     onClick={() => handleImageClick(image)}
                   />
-                  {image.kept ? (
-                    <div className="text-center py-3 bg-green-50 text-green-700 text-sm font-medium">
-                      ✓ Saved to gallery
-                    </div>
-                  ) : (
-                    <div className="flex gap-2 p-3">
-                      <button
-                        onClick={() => handleDelete(image.id)}
-                        className="flex-1 py-3 bg-red-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 active:opacity-70 transition-opacity"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                        Delete
-                      </button>
-                      <button
-                        onClick={() => handleAddReference(image.id)}
-                        disabled={!selectedTile?.id || !!image.tile_id}
-                        className={`flex-1 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 active:opacity-70 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed ${
-                          image.tile_id ? 'bg-green-100 text-green-600' : 'bg-blue-500 text-white'
-                        }`}
-                      >
-                        <Plus className="w-5 h-5" />
-                        {image.tile_id ? 'Added' : 'Reference'}
-                      </button>
+                  <div className="flex justify-center gap-3 p-3">
+                    {image.kept ? (
+                      <span className="inline-block px-3 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full border border-green-200">
+                        Saved to Gallery
+                      </span>
+                    ) : (
                       <button
                         onClick={() => handleKeep(image.id)}
-                        className="flex-1 py-3 bg-green-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 active:opacity-70 transition-opacity"
+                        className="px-3 py-1 text-sm rounded-md border hover:bg-green-50 text-green-600 border-green-200 transition"
                       >
-                        <Check className="w-5 h-5" />
                         Keep
                       </button>
-                    </div>
-                  )}
+                    )}
+
+                    <button
+                      onClick={() => handleDelete(image.id)}
+                      className="px-3 py-1 text-sm rounded-md border hover:bg-red-50 text-red-600 border-red-200 transition"
+                    >
+                      Delete
+                    </button>
+
+                    <button
+                      onClick={() => handleAddReference(image.id)}
+                      disabled={!selectedTile?.id || !!image.tile_id}
+                      className={`px-3 py-1 text-sm rounded-md border transition disabled:opacity-50 disabled:cursor-not-allowed ${
+                        image.tile_id
+                          ? 'bg-blue-100 text-blue-600 border-blue-200'
+                          : 'hover:bg-blue-50 text-blue-600 border-blue-200'
+                      }`}
+                    >
+                      {image.tile_id ? 'Added to Tile' : '+ Add Reference'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )
@@ -431,8 +439,8 @@ export default function ChatPage() {
             />
             <div className="mt-4 text-center">
               <p className="text-white text-sm">{viewImageData.prompt || 'Generated image'}</p>
-              {viewImageData.tile_id && (
-                <p className="text-gray-300 text-xs mt-1">Tile ID: {viewImageData.tile_id}</p>
+              {viewImageData.tile_name && (
+                <p className="text-gray-300 text-xs mt-1">Generated from tile: {viewImageData.tile_name}</p>
               )}
             </div>
             <button
