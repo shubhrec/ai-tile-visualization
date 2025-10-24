@@ -167,7 +167,7 @@ export default function ChatPage() {
     try {
       const mockImageUrl = `https://via.placeholder.com/800x600/667eea/ffffff?text=${encodeURIComponent(prompt.slice(0, 20))}`
 
-      const res = await secureFetch('/api/generated', {
+      const res = await secureFetch('/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
