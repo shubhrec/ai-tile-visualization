@@ -194,7 +194,9 @@ export default function ChatPage() {
     }
   }
 
-  const keptCount = images.filter(img => img?.kept).length
+  const keptCount = Array.isArray(images)
+    ? images.filter(img => img?.kept === true).length
+    : 0
 
   if (loading) {
     return (
@@ -233,7 +235,7 @@ export default function ChatPage() {
         ref={chatAreaRef}
         className="flex-1 overflow-y-auto p-4"
       >
-        {images.length === 0 ? (
+        {!Array.isArray(images) || images.length === 0 ? (
           <div className="text-center py-20">
             <div className="text-5xl mb-4 opacity-50">🎨</div>
             <div className="text-lg font-semibold text-gray-800 mb-2">
