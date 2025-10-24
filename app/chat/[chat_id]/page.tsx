@@ -440,9 +440,15 @@ export default function ChatPage() {
               onClick={(e) => e.stopPropagation()}
             />
             <div className="mt-4 text-center">
-              <p className="text-white text-sm">{viewImageData.prompt || 'Generated image'}</p>
               {viewImageData.tile_name && (
-                <p className="text-gray-300 text-xs mt-1">Generated from tile: {viewImageData.tile_name}</p>
+                <div className="text-sm text-gray-200">
+                  Generated from tile: {viewImageData.tile_name}
+                </div>
+              )}
+              {!viewImageData.tile_name && viewImageData.prompt && (
+                <div className="text-sm text-gray-200 italic">
+                  {viewImageData.prompt}
+                </div>
               )}
             </div>
             <button
