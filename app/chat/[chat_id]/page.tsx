@@ -346,7 +346,7 @@ export default function ChatPage() {
       </div>
 
       <div className="bg-white p-4 shadow-lg">
-        <div className="flex gap-2 mb-3">
+        <div className="flex justify-center gap-2 w-full mb-3">
           <button
             onClick={() => {
               if (selectedTile) {
@@ -354,7 +354,8 @@ export default function ChatPage() {
               }
               router.push('/select/home')
             }}
-            className={`flex-1 p-3 rounded-xl border-2 transition-all ${
+            title={selectedHome?.name || 'Select Home'}
+            className={`flex-1 max-w-[45%] sm:max-w-[200px] p-3 rounded-xl border-2 transition-all ${
               selectedHome
                 ? 'bg-blue-50 border-blue-600'
                 : 'bg-gray-50 border-gray-200'
@@ -362,7 +363,7 @@ export default function ChatPage() {
           >
             <div className="text-2xl mb-1">📷</div>
             <div className="text-xs font-semibold text-gray-700">Home</div>
-            <div className="text-xs text-gray-500 truncate">
+            <div className="text-xs text-gray-500 truncate overflow-hidden text-ellipsis whitespace-nowrap">
               {selectedHome ? selectedHome.name : 'Select'}
             </div>
             <div className="text-xs text-blue-600 font-semibold mt-1">
@@ -377,7 +378,8 @@ export default function ChatPage() {
               }
               router.push('/select/tile')
             }}
-            className={`flex-1 p-3 rounded-xl border-2 transition-all ${
+            title={selectedTile?.name || 'Select Tile'}
+            className={`flex-1 max-w-[45%] sm:max-w-[200px] p-3 rounded-xl border-2 transition-all ${
               selectedTile
                 ? 'bg-blue-50 border-blue-600'
                 : 'bg-gray-50 border-gray-200'
@@ -385,7 +387,7 @@ export default function ChatPage() {
           >
             <div className="text-2xl mb-1">🎨</div>
             <div className="text-xs font-semibold text-gray-700">Tile</div>
-            <div className="text-xs text-gray-500 truncate">
+            <div className="text-xs text-gray-500 truncate overflow-hidden text-ellipsis whitespace-nowrap">
               {selectedTile ? selectedTile.name : 'Select'}
             </div>
             <div className="text-xs text-blue-600 font-semibold mt-1">
