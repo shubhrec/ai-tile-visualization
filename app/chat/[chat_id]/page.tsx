@@ -53,8 +53,7 @@ export default function ChatPage() {
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null)
   const [selectedHome, setSelectedHome] = useState<Home | null>(null)
   const [prompt, setPrompt] = useState('')
-  const [viewImage, setViewImage] = useState<string | null>(null)
-  const [viewImageData, setViewImageData] = useState<GeneratedImage | null>(null)
+  const [viewImage, setViewImage] = useState<GeneratedImage | null>(null)
 
   useEffect(() => {
     loadChatData()
@@ -194,8 +193,7 @@ export default function ChatPage() {
   }
 
   const handleImageClick = (image: GeneratedImage) => {
-    setViewImage(image.image_url)
-    setViewImageData(image)
+    setViewImage(image)
   }
 
   const handleGenerate = async () => {
@@ -424,43 +422,27 @@ export default function ChatPage() {
         </button>
       </div>
 
-      {viewImage && viewImageData && (
-        <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-          onClick={() => {
-            setViewImage(null)
-            setViewImageData(null)
-          }}
-        >
-          <div className="relative max-w-5xl w-full">
-            <img
-              src={viewImage}
-              alt="Full view"
-              className="max-h-[85vh] w-full rounded-lg shadow-2xl object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
-            <div className="mt-4 text-center">
-              {viewImageData.tile_name && (
-                <div className="text-sm text-gray-200">
-                  Generated from tile: {viewImageData.tile_name}
-                </div>
-              )}
-              {!viewImageData.tile_name && viewImageData.prompt && (
-                <div className="text-sm text-gray-200 italic">
-                  {viewImageData.prompt}
-                </div>
-              )}
-            </div>
-            <button
-              onClick={() => {
-                setViewImage(null)
-                setViewImageData(null)
-              }}
-              className="absolute -top-2 -right-2 bg-white text-gray-800 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-gray-100 transition"
-            >
-              ✕
-            </button>
+      {viewImage && (
+        <div className="fixed inset-0 bg-black/70 flex flex-col items-center justify-center z-50 p-4">
+          <img
+            src={viewImage.image_url}
+            alt={viewImage.prompt || 'Generated Image'}
+            className="max-h-[80vh] max-w-[90vw] rounded-lg shadow-lg object-contain"
+          />
+
+          <div className="mt-4 text-center space-y-1 text-sm text-gray-200">
+            {viewImage.prompt && <p className="italic">"{viewImage.prompt}"</p>}
+            {viewImage.tile_name && (
+              <p>Generated from tile: <span className="font-semibold">{viewImage.tile_name}</span></p>
+            )}
           </div>
+
+          <button
+            onClick={() => setViewImage(null)}
+            className="absolute top-4 right-4 text-white text-3xl"
+          >
+            ✕
+          </button>
         </div>
       )}
     </div>
