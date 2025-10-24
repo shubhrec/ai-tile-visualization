@@ -62,7 +62,6 @@ export default function ChatPage() {
       try {
         const home = JSON.parse(savedHome)
         setSelectedHome(home)
-        sessionStorage.removeItem('selectedHome')
         toast.success(`Selected ${home.name || 'Home'} added to chat`)
       } catch (err) {
         console.error('Failed to parse saved home', err)
@@ -74,7 +73,6 @@ export default function ChatPage() {
       try {
         const tile = JSON.parse(savedTile)
         setSelectedTile(tile)
-        sessionStorage.removeItem('selectedTile')
         toast.success(`Selected ${tile.name || 'Tile'} added to chat`)
       } catch (err) {
         console.error('Failed to parse saved tile', err)
@@ -293,8 +291,9 @@ export default function ChatPage() {
         <div className="flex gap-2 mb-3">
           <button
             onClick={() => {
-              sessionStorage.removeItem('selectedHome')
-              sessionStorage.removeItem('selectedTile')
+              if (selectedTile) {
+                sessionStorage.setItem('selectedTile', JSON.stringify(selectedTile))
+              }
               router.push('/select/home')
             }}
             className={`flex-1 p-3 rounded-xl border-2 transition-all ${
@@ -315,8 +314,9 @@ export default function ChatPage() {
 
           <button
             onClick={() => {
-              sessionStorage.removeItem('selectedHome')
-              sessionStorage.removeItem('selectedTile')
+              if (selectedHome) {
+                sessionStorage.setItem('selectedHome', JSON.stringify(selectedHome))
+              }
               router.push('/select/tile')
             }}
             className={`flex-1 p-3 rounded-xl border-2 transition-all ${
