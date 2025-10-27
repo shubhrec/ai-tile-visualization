@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { secureFetch } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
@@ -44,6 +44,7 @@ export default function ReferencePage() {
   const [editName, setEditName] = useState('')
   const [editSize, setEditSize] = useState('')
   const [editPrice, setEditPrice] = useState('')
+  const [isCreatingChat, setIsCreatingChat] = useState(false)
 
   useEffect(() => {
     async function fetchTile() {
@@ -141,7 +142,10 @@ export default function ReferencePage() {
     }
   }
 
-  const handleNewChat = async () => {
+  const handleNewChat = useCallback(async () => {
+    if (isCreatingChat) return
+    setIsCreatingChat(true)
+
     try {
       const res = await secureFetch('/api/chats', {
         method: 'POST',
@@ -158,8 +162,10 @@ export default function ReferencePage() {
     } catch (err) {
       console.error('Create chat error:', err)
       toast.error('Failed to create chat')
+    } finally {
+      setIsCreatingChat(false)
     }
-  }
+  }, [isCreatingChat, router])
 
 
   if (loading) {
@@ -185,6 +191,8 @@ export default function ReferencePage() {
           <img
             src={tile.image_url}
             alt={tile.name}
+            loading="eager"
+            decoding="async"
             className="w-64 h-64 object-cover rounded-lg shadow-md cursor-pointer hover:opacity-90 transition-opacity"
             onClick={() => setSelectedImage(tile.image_url)}
           />
@@ -217,6 +225,8 @@ export default function ReferencePage() {
                   key={item.id}
                   src={item.image_url}
                   alt="Generated Visualization"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-40 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
                   onClick={() => setSelectedImage(item.image_url)}
                 />
@@ -239,10 +249,11 @@ export default function ReferencePage() {
 
         <button
           onClick={handleNewChat}
-          className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors"
+          disabled={isCreatingChat}
+          className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <PlusCircle className="w-6 h-6" />
-          <span className="text-xs mt-1">New Chat</span>
+          <span className="text-xs mt-1">{isCreatingChat ? 'Creating...' : 'New Chat'}</span>
         </button>
 
         <button

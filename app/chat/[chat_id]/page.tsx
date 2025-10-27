@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { secureFetch } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
+import GeneratedImageCard from '@/components/GeneratedImageCard'
 import { ArrowLeft, Image as ImageIcon, Trash2, Check, Loader2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -119,7 +120,7 @@ export default function ChatPage() {
     scrollToBottom()
   }, [images])
 
-  const handleKeep = async (imageId: string) => {
+  const handleKeep = useCallback(async (imageId: string) => {
     try {
       const res = await secureFetch(`/api/generated/${imageId}`, {
         method: 'PATCH',
@@ -142,9 +143,9 @@ export default function ChatPage() {
       console.error('Keep error:', err)
       toast.error('Failed to keep image')
     }
-  }
+  }, [])
 
-  const handleDelete = async (imageId: string) => {
+  const handleDelete = useCallback(async (imageId: string) => {
     if (!window.confirm('Delete this visualization?')) return
 
     try {
@@ -163,9 +164,9 @@ export default function ChatPage() {
       console.error('Delete error:', err)
       toast.error('Failed to delete image')
     }
-  }
+  }, [])
 
-  const handleAddReference = async (imageId: string) => {
+  const handleAddReference = useCallback(async (imageId: string) => {
     if (!selectedTile?.id) {
       toast.error('Please select a tile first.')
       return
@@ -190,11 +191,11 @@ export default function ChatPage() {
       console.error(err)
       toast.error('Error adding reference.')
     }
-  }
+  }, [selectedTile])
 
-  const handleImageClick = (image: GeneratedImage) => {
+  const handleImageClick = useCallback((image: GeneratedImage) => {
     setViewImage(image)
-  }
+  }, [])
 
   const handleGenerate = async () => {
     if (!selectedTile || !prompt.trim()) {
@@ -289,49 +290,19 @@ export default function ChatPage() {
           images.filter(Boolean).map((image, idx) => {
             if (!image?.image_url) return null
             return (
-              <div key={image.id || idx} className="mb-5">
-                <div className="bg-white rounded-2xl overflow-hidden shadow-md">
-                  <img
-                    src={image.image_url}
-                    alt={image.prompt || 'Generated image'}
-                    className="w-full h-96 object-cover cursor-pointer hover:opacity-90 transition"
-                    onClick={() => handleImageClick(image)}
-                  />
-                  <div className="flex justify-center gap-3 p-3">
-                    {image.kept ? (
-                      <span className="inline-block px-3 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full border border-green-200">
-                        Saved to Gallery
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleKeep(image.id)}
-                        className="px-3 py-1 text-sm rounded-md border hover:bg-green-50 text-green-600 border-green-200 transition"
-                      >
-                        Keep
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() => handleDelete(image.id)}
-                      className="px-3 py-1 text-sm rounded-md border hover:bg-red-50 text-red-600 border-red-200 transition"
-                    >
-                      Delete
-                    </button>
-
-                    <button
-                      onClick={() => handleAddReference(image.id)}
-                      disabled={!selectedTile?.id || !!image.tile_id}
-                      className={`px-3 py-1 text-sm rounded-md border transition disabled:opacity-50 disabled:cursor-not-allowed ${
-                        image.tile_id
-                          ? 'bg-blue-100 text-blue-600 border-blue-200'
-                          : 'hover:bg-blue-50 text-blue-600 border-blue-200'
-                      }`}
-                    >
-                      {image.tile_id ? 'Added to Tile' : '+ Add Reference'}
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <GeneratedImageCard
+                key={image.id || idx}
+                id={image.id}
+                image_url={image.image_url}
+                prompt={image.prompt}
+                kept={image.kept}
+                tile_id={image.tile_id}
+                onImageClick={() => handleImageClick(image)}
+                onKeep={() => handleKeep(image.id)}
+                onDelete={() => handleDelete(image.id)}
+                onAddReference={() => handleAddReference(image.id)}
+                canAddReference={!!selectedTile?.id}
+              />
             )
           })
         )}

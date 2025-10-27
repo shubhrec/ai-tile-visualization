@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, memo } from 'react'
 import { useRouter } from 'next/navigation'
 import { secureFetch } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
@@ -10,6 +10,43 @@ import Modal from '@/components/Modal'
 import BackButton from '@/components/BackButton'
 import { toast } from 'sonner'
 import { Trash2 } from 'lucide-react'
+
+const HomeCard = memo(function HomeCard({
+  home,
+  editMode,
+  onImageClick,
+  onDelete
+}: {
+  home: { id: string; name: string; image_url: string }
+  editMode: boolean
+  onImageClick: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div className="relative group border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
+      <img
+        src={home.image_url}
+        alt={home.name}
+        loading="lazy"
+        decoding="async"
+        className="w-full h-40 object-cover cursor-pointer"
+        onClick={() => !editMode && onImageClick()}
+      />
+      <div className="p-2 text-center">
+        <p className="text-xs sm:text-sm text-gray-700 truncate">{home.name || 'Home'}</p>
+      </div>
+      {editMode && (
+        <button
+          onClick={onDelete}
+          className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 shadow-md transition-colors"
+          title="Delete"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  )
+})
 
 interface Home {
   id: string
@@ -43,7 +80,7 @@ export default function HomesPage() {
     }
   }
 
-  async function handleDelete(homeId: string) {
+  const handleDelete = useCallback(async (homeId: string) => {
     const confirmDelete = window.confirm('Delete this home?')
     if (!confirmDelete) return
 
@@ -59,7 +96,7 @@ export default function HomesPage() {
       console.error('Failed to delete home', err)
       toast.error('Failed to delete home')
     }
-  }
+  }, [])
 
   async function handleUpload(file: File, url: string) {
     try {
@@ -118,26 +155,13 @@ export default function HomesPage() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {homes.map(home => (
-              <div key={home.id} className="relative group border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
-                <img
-                  src={home.image_url}
-                  alt={home.name}
-                  className="w-full h-40 object-cover cursor-pointer"
-                  onClick={() => !editMode && setSelectedImage(home.image_url)}
-                />
-                <div className="p-2 text-center">
-                  <p className="text-xs sm:text-sm text-gray-700 truncate">{home.name || 'Home'}</p>
-                </div>
-                {editMode && (
-                  <button
-                    onClick={() => handleDelete(home.id)}
-                    className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 shadow-md transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+              <HomeCard
+                key={home.id}
+                home={home}
+                editMode={editMode}
+                onImageClick={() => setSelectedImage(home.image_url)}
+                onDelete={() => handleDelete(home.id)}
+              />
             ))}
           </div>
         )}

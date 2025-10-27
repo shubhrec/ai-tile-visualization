@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
 import { secureFetch } from '@/lib/api'
@@ -9,6 +9,52 @@ import BackButton from '@/components/BackButton'
 import UploadButton from '@/components/UploadButton'
 import { Sparkles, X } from 'lucide-react'
 import { toast } from 'sonner'
+
+const ImageSelector = memo(function ImageSelector({
+  items,
+  onSelect,
+  title
+}: {
+  items: { id: string; name: string; image_url: string }[]
+  onSelect: (item: any) => void
+  title: string
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+        </div>
+        <div className="p-6">
+          {items.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No items available</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {items.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => onSelect(item)}
+                  className="flex flex-col items-center gap-2 p-3 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
+                >
+                  <img
+                    src={item.image_url}
+                    alt={item.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-32 object-cover rounded"
+                  />
+                  <p className="text-sm font-medium text-gray-700 text-center truncate w-full">{item.name}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+})
 
 interface Tile {
   id: string
@@ -110,15 +156,15 @@ export default function GeneratePage() {
     }
   }
 
-  const handleSelectTile = (tile: Tile) => {
+  const handleSelectTile = useCallback((tile: Tile) => {
     setSelectedTile(tile)
     setShowTileSelector(false)
-  }
+  }, [])
 
-  const handleSelectHome = (home: Home) => {
+  const handleSelectHome = useCallback((home: Home) => {
     setSelectedHome(home)
     setShowHomeSelector(false)
-  }
+  }, [])
 
   const handleGenerate = () => {
     if (!selectedTile || !selectedHome) {
@@ -154,7 +200,7 @@ export default function GeneratePage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Select Tile</h2>
               {selectedTile ? (
                 <div className="flex flex-col sm:flex-row gap-4 items-start p-4 border rounded-lg bg-gray-50">
-                  <img src={selectedTile.image_url} alt="Tile preview" className="w-full sm:w-32 h-32 object-cover rounded-lg" />
+                  <img src={selectedTile.image_url} alt="Tile preview" loading="eager" decoding="async" className="w-full sm:w-32 h-32 object-cover rounded-lg" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-700 mb-3">{selectedTile.name}</p>
                     <div className="flex gap-2">
@@ -193,7 +239,7 @@ export default function GeneratePage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-3">2. Select Home</h2>
               {selectedHome ? (
                 <div className="flex flex-col sm:flex-row gap-4 items-start p-4 border rounded-lg bg-gray-50">
-                  <img src={selectedHome.image_url} alt="Home preview" className="w-full sm:w-32 h-32 object-cover rounded-lg" />
+                  <img src={selectedHome.image_url} alt="Home preview" loading="eager" decoding="async" className="w-full sm:w-32 h-32 object-cover rounded-lg" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-700 mb-3">{selectedHome.name}</p>
                     <div className="flex gap-2">
@@ -248,85 +294,19 @@ export default function GeneratePage() {
       </div>
 
       {showTileSelector && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">Select a Tile</h2>
-              <button
-                onClick={() => setShowTileSelector(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6">
-              {tiles.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">No tiles available</p>
-                  <p className="text-sm text-gray-400 mt-2">Upload tiles to your catalog first</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {tiles.map(tile => (
-                    <button
-                      key={tile.id}
-                      onClick={() => handleSelectTile(tile)}
-                      className="flex flex-col items-center gap-2 p-3 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
-                    >
-                      <img
-                        src={tile.image_url}
-                        alt={tile.name}
-                        className="w-full h-32 object-cover rounded"
-                      />
-                      <p className="text-sm font-medium text-gray-700 text-center truncate w-full">{tile.name}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <ImageSelector
+          items={tiles}
+          onSelect={handleSelectTile}
+          title="Select a Tile"
+        />
       )}
 
       {showHomeSelector && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">Select a Home</h2>
-              <button
-                onClick={() => setShowHomeSelector(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6">
-              {homes.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">No homes available</p>
-                  <p className="text-sm text-gray-400 mt-2">Upload homes to your catalog first</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {homes.map(home => (
-                    <button
-                      key={home.id}
-                      onClick={() => handleSelectHome(home)}
-                      className="flex flex-col items-center gap-2 p-3 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
-                    >
-                      <img
-                        src={home.image_url}
-                        alt={home.name}
-                        className="w-full h-32 object-cover rounded"
-                      />
-                      <p className="text-sm font-medium text-gray-700 text-center truncate w-full">{home.name}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <ImageSelector
+          items={homes}
+          onSelect={handleSelectHome}
+          title="Select a Home"
+        />
       )}
     </div>
   )

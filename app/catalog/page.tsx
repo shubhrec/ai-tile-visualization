@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { secureFetch } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
-import ImageGrid from '@/components/ImageGrid'
+import TileCard from '@/components/TileCard'
 import TileUploadModal from '@/components/TileUploadModal'
 import { MessageCircle, PlusCircle, Upload } from 'lucide-react'
 import { toast } from 'sonner'
@@ -27,6 +27,7 @@ export default function CatalogPage() {
   const [loading, setLoading] = useState(true)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [editingTempTile, setEditingTempTile] = useState<Tile | null>(null)
+  const [isCreatingChat, setIsCreatingChat] = useState(false)
 
   useEffect(() => {
     async function loadTiles() {
@@ -44,9 +45,9 @@ export default function CatalogPage() {
     loadTiles()
   }, [])
 
-  const handleTileClick = (id: string) => {
+  const handleTileClick = useCallback((id: string) => {
     router.push(`/reference/${id}`)
-  }
+  }, [router])
 
   const handleUploadSuccess = async () => {
     try {
@@ -58,7 +59,10 @@ export default function CatalogPage() {
     }
   }
 
-  const handleNewChat = async () => {
+  const handleNewChat = useCallback(async () => {
+    if (isCreatingChat) return
+    setIsCreatingChat(true)
+
     try {
       const res = await secureFetch('/api/chats', {
         method: 'POST',
@@ -75,8 +79,10 @@ export default function CatalogPage() {
     } catch (err) {
       console.error('Create chat error:', err)
       toast.error('Failed to create chat')
+    } finally {
+      setIsCreatingChat(false)
     }
-  }
+  }, [isCreatingChat, router])
 
   const handleDelete = async (tileId: string) => {
     const confirmDelete = window.confirm('Are you sure you want to delete this tile?')
@@ -149,38 +155,20 @@ export default function CatalogPage() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {tiles.map(tile => (
-              <div
+              <TileCard
                 key={tile.id}
-                className="relative group cursor-pointer"
-                onClick={() => {
+                id={tile.id}
+                name={tile.name}
+                image_url={tile.image_url}
+                add_catalog={tile.add_catalog}
+                onClick={(id) => {
                   if (tile.add_catalog === false) {
                     handleAddToCatalog(tile)
                   } else {
-                    handleTileClick(tile.id)
+                    handleTileClick(id)
                   }
                 }}
-              >
-                <div className={`relative aspect-square rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow ${
-                  tile.add_catalog === false ? 'opacity-50' : ''
-                }`}>
-                  <img
-                    src={tile.image_url}
-                    alt={tile.name}
-                    className="w-full h-full object-cover"
-                    style={tile.add_catalog === false ? { filter: 'blur(4px)' } : {}}
-                  />
-                  {tile.add_catalog === false && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                      <div className="bg-white px-4 py-2 rounded-lg font-semibold text-sm">
-                        Add Details
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="mt-2 text-sm font-medium text-gray-700 truncate">
-                  {tile.name || 'Untitled'}
-                </div>
-              </div>
+              />
             ))}
           </div>
         )}
@@ -199,10 +187,11 @@ export default function CatalogPage() {
 
         <button
           onClick={handleNewChat}
-          className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors"
+          disabled={isCreatingChat}
+          className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <PlusCircle className="w-6 h-6" />
-          <span className="text-xs mt-1">New Chat</span>
+          <span className="text-xs mt-1">{isCreatingChat ? 'Creating...' : 'New Chat'}</span>
         </button>
 
         <button
