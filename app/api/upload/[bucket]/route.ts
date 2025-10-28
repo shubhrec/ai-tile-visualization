@@ -66,13 +66,11 @@ export async function POST(
       )
     }
 
-    const { data: urlData } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(data.path)
+    const cdnUrl = `${supabaseUrl}/storage/v1/render/image/public/${bucket}/${data.path}?width=512&quality=80`
 
     return NextResponse.json({
       success: true,
-      url: urlData.publicUrl,
+      url: cdnUrl,
     })
   } catch (err) {
     console.error('Upload error:', err)
