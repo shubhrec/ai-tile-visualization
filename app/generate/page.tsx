@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback, memo } from 'react'
 import { useRouter } from 'next/navigation'
+import useSWR, { mutate } from 'swr'
 import { useAuth } from '@/lib/auth'
 import { secureFetch } from '@/lib/api'
+import { swrFetcher, swrConfig } from '@/lib/swr-fetcher'
 import Navbar from '@/components/Navbar'
 import BackButton from '@/components/BackButton'
 import UploadButton from '@/components/UploadButton'
@@ -71,32 +73,16 @@ interface Home {
 export default function GeneratePage() {
   useAuth()
   const router = useRouter()
+  const { data: tilesData } = useSWR('/api/tiles', swrFetcher, swrConfig)
+  const { data: homesData } = useSWR('/api/homes', swrFetcher, swrConfig)
+
+  const tiles = tilesData?.tiles || []
+  const homes = homesData?.homes || []
+
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null)
   const [selectedHome, setSelectedHome] = useState<Home | null>(null)
-  const [tiles, setTiles] = useState<Tile[]>([])
-  const [homes, setHomes] = useState<Home[]>([])
   const [showTileSelector, setShowTileSelector] = useState(false)
   const [showHomeSelector, setShowHomeSelector] = useState(false)
-
-  useEffect(() => {
-    loadCatalogs()
-  }, [])
-
-  async function loadCatalogs() {
-    try {
-      const [tilesRes, homesRes] = await Promise.all([
-        secureFetch('/api/tiles'),
-        secureFetch('/api/homes')
-      ])
-      const tilesData = await tilesRes.json()
-      const homesData = await homesRes.json()
-      setTiles(tilesData.tiles || [])
-      setHomes(homesData.homes || [])
-    } catch (err) {
-      console.error('Failed to load catalogs', err)
-      toast.error('Failed to load catalogs')
-    }
-  }
 
   const handleTileUpload = async (file: File, url: string) => {
     try {
@@ -117,7 +103,7 @@ export default function GeneratePage() {
         })
         setShowTileSelector(false)
         toast.success('Tile added successfully')
-        await loadCatalogs()
+        mutate('/api/tiles')
       } else {
         throw new Error('Failed to insert tile')
       }
@@ -146,7 +132,7 @@ export default function GeneratePage() {
         })
         setShowHomeSelector(false)
         toast.success('Home added successfully')
-        await loadCatalogs()
+        mutate('/api/homes')
       } else {
         throw new Error('Failed to insert home')
       }

@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import useSWR, { mutate } from 'swr'
 import { secureFetch } from '@/lib/api'
+import { swrFetcher, swrConfig } from '@/lib/swr-fetcher'
 import { useAuth } from '@/lib/auth'
 import GeneratedImageCard from '@/components/GeneratedImageCard'
 import { ArrowLeft, Image as ImageIcon, Trash2, Check, Loader2, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -46,10 +48,18 @@ export default function ChatPage() {
   const chatId = params.chat_id as string
   const chatAreaRef = useRef<HTMLDivElement>(null)
 
-  const [chat, setChat] = useState<Chat | null>(null)
-  const [images, setImages] = useState<GeneratedImage[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: chatData, error: chatError, isLoading } = useSWR(
+    chatId ? `/api/chats/${chatId}` : null,
+    swrFetcher,
+    swrConfig
+  )
   const [generating, setGenerating] = useState(false)
+
+  const chat = chatData?.chat || null
+  const images = chatData?.images?.map((img: any) => ({
+    ...img,
+    tile_name: img.tile_name || (img.tile?.name ?? null),
+  })) || []
 
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null)
   const [selectedHome, setSelectedHome] = useState<Home | null>(null)
@@ -57,8 +67,11 @@ export default function ChatPage() {
   const [viewImage, setViewImage] = useState<GeneratedImage | null>(null)
 
   useEffect(() => {
-    loadChatData()
-  }, [chatId])
+    if (chatError) {
+      toast.error('Chat not found')
+      router.push('/catalog')
+    }
+  }, [chatError, router])
 
   useEffect(() => {
     const savedHome = sessionStorage.getItem('selectedHome')
@@ -84,31 +97,6 @@ export default function ChatPage() {
     }
   }, [])
 
-  const loadChatData = async () => {
-    try {
-      const res = await secureFetch(`/api/chats/${chatId}`)
-      if (!res.ok) {
-        toast.error('Chat not found')
-        router.push('/catalog')
-        return
-      }
-
-      const data = await res.json()
-      setChat(data.chat)
-      setImages(
-        (data.images || []).map((img: any) => ({
-          ...img,
-          tile_name: img.tile_name || (img.tile?.name ?? null),
-        }))
-      )
-    } catch (err) {
-      console.error('Failed to load chat', err)
-      toast.error('Failed to load chat')
-      router.push('/catalog')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const scrollToBottom = () => {
     if (chatAreaRef.current) {
@@ -129,11 +117,7 @@ export default function ChatPage() {
       })
 
       if (res.ok) {
-        setImages(prev =>
-          prev.map(img =>
-            img.id === imageId ? { ...img, kept: true } : img
-          )
-        )
+        mutate(`/api/chats/${chatId}`)
         toast.success('Image saved to gallery')
         setPrompt('')
       } else {
@@ -154,7 +138,7 @@ export default function ChatPage() {
       })
 
       if (res.ok) {
-        setImages(prev => prev.filter(img => img.id !== imageId))
+        mutate(`/api/chats/${chatId}`)
         toast.success('Image deleted')
         setPrompt('')
       } else {
@@ -181,9 +165,7 @@ export default function ChatPage() {
       const data = await res.json()
       if (data.success) {
         toast.success('Added to tile gallery!')
-        setImages(prev =>
-          prev.map(img => (img.id === imageId ? { ...img, tile_id: selectedTile.id } : img))
-        )
+        mutate(`/api/chats/${chatId}`)
       } else {
         toast.error('Failed to add reference.')
       }
@@ -199,7 +181,7 @@ export default function ChatPage() {
 
   const getCurrentImageIndex = useCallback(() => {
     if (!viewImage) return -1
-    return images.findIndex(img => img.id === viewImage.id)
+    return images.findIndex((img: GeneratedImage) => img.id === viewImage.id)
   }, [viewImage, images])
 
   const handlePreviousImage = useCallback(() => {
@@ -256,8 +238,7 @@ export default function ChatPage() {
       })
 
       if (res.ok) {
-        const data = await res.json()
-        setImages(prev => [...prev, data.image])
+        mutate(`/api/chats/${chatId}`)
         toast.success('Image generated')
       } else {
         toast.error('Failed to generate image')
@@ -274,7 +255,7 @@ export default function ChatPage() {
     ? images.filter(img => img?.kept === true).length
     : 0
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>

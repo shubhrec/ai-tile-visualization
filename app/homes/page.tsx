@@ -2,12 +2,15 @@
 
 import { useEffect, useState, useCallback, memo } from 'react'
 import { useRouter } from 'next/navigation'
+import useSWR, { mutate } from 'swr'
 import { secureFetch } from '@/lib/api'
+import { swrFetcher, swrConfig } from '@/lib/swr-fetcher'
 import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import UploadButton from '@/components/UploadButton'
 import Modal from '@/components/Modal'
 import BackButton from '@/components/BackButton'
+import { HomeGridSkeleton } from '@/components/SkeletonLoader'
 import { toast } from 'sonner'
 import { Trash2 } from 'lucide-react'
 
@@ -58,27 +61,17 @@ interface Home {
 export default function HomesPage() {
   useAuth()
   const router = useRouter()
-  const [homes, setHomes] = useState<Home[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, error, isLoading } = useSWR('/api/homes', swrFetcher, swrConfig)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [editMode, setEditMode] = useState(false)
 
-  useEffect(() => {
-    loadHomes()
-  }, [])
+  const homes = data?.homes || []
 
-  async function loadHomes() {
-    try {
-      const res = await secureFetch('/api/homes')
-      const data = await res.json()
-      setHomes(data.homes || [])
-    } catch (err) {
-      console.error('Failed to fetch homes', err)
+  useEffect(() => {
+    if (error) {
       toast.error('Failed to load homes')
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [error])
 
   const handleDelete = useCallback(async (homeId: string) => {
     const confirmDelete = window.confirm('Delete this home?')
@@ -87,7 +80,7 @@ export default function HomesPage() {
     try {
       const res = await secureFetch(`/api/homes/${homeId}`, { method: 'DELETE' })
       if (res.ok) {
-        setHomes(prev => prev.filter(h => h.id !== homeId))
+        mutate('/api/homes')
         toast.success('Home deleted')
       } else {
         toast.error('Failed to delete home')
@@ -108,7 +101,7 @@ export default function HomesPage() {
       const data = await res.json()
 
       if (data.success && data.home) {
-        setHomes(prev => [data.home, ...prev])
+        mutate('/api/homes')
         toast.success('Home uploaded successfully')
       } else {
         toast.error('Failed to save home')
@@ -143,10 +136,8 @@ export default function HomesPage() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
+        {isLoading ? (
+          <HomeGridSkeleton count={10} />
         ) : homes.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed">
             <p className="text-gray-500">No homes yet</p>
@@ -154,7 +145,7 @@ export default function HomesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-            {homes.map(home => (
+            {homes.map((home: Home) => (
               <HomeCard
                 key={home.id}
                 home={home}

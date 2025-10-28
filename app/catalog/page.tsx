@@ -2,11 +2,14 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import useSWR, { mutate } from 'swr'
 import { secureFetch } from '@/lib/api'
+import { swrFetcher, swrConfig } from '@/lib/swr-fetcher'
 import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import TileCard from '@/components/TileCard'
 import TileUploadModal from '@/components/TileUploadModal'
+import { TileGridSkeleton } from '@/components/SkeletonLoader'
 import { MessageCircle, PlusCircle, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -23,40 +26,25 @@ interface Tile {
 export default function CatalogPage() {
   useAuth()
   const router = useRouter()
-  const [tiles, setTiles] = useState<Tile[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, error, isLoading } = useSWR('/api/tiles', swrFetcher, swrConfig)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [editingTempTile, setEditingTempTile] = useState<Tile | null>(null)
   const [isCreatingChat, setIsCreatingChat] = useState(false)
 
+  const tiles = useMemo(() => data?.tiles || [], [data])
+
   useEffect(() => {
-    async function loadTiles() {
-      try {
-        const res = await secureFetch('/api/tiles')
-        const data = await res.json()
-        setTiles(data.tiles || [])
-      } catch (err) {
-        console.error('Failed to fetch tiles', err)
-        toast.error('Failed to load tiles')
-      } finally {
-        setLoading(false)
-      }
+    if (error) {
+      toast.error('Failed to load tiles')
     }
-    loadTiles()
-  }, [])
+  }, [error])
 
   const handleTileClick = useCallback((id: string) => {
     router.push(`/reference/${id}`)
   }, [router])
 
   const handleUploadSuccess = async () => {
-    try {
-      const res = await secureFetch('/api/tiles')
-      const data = await res.json()
-      setTiles(data.tiles || [])
-    } catch (err) {
-      console.error('Failed to reload tiles', err)
-    }
+    mutate('/api/tiles')
   }
 
   const handleNewChat = useCallback(async () => {
@@ -91,7 +79,7 @@ export default function CatalogPage() {
     try {
       const res = await secureFetch(`/api/tiles/${tileId}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Delete failed')
-      setTiles(prev => prev.filter(t => t.id !== tileId))
+      mutate('/api/tiles')
       toast.success('Tile deleted successfully')
     } catch (err) {
       console.error('Delete error:', err)
@@ -121,9 +109,7 @@ export default function CatalogPage() {
       if (res.ok) {
         toast.success('Tile added to catalog')
         setEditingTempTile(null)
-        const tilesRes = await secureFetch('/api/tiles')
-        const data = await tilesRes.json()
-        setTiles(data.tiles || [])
+        mutate('/api/tiles')
       } else {
         toast.error('Failed to update tile')
       }
@@ -143,10 +129,8 @@ export default function CatalogPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Tile Catalog</h1>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
+        {isLoading ? (
+          <TileGridSkeleton count={8} />
         ) : tiles.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed">
             <p className="text-gray-500">No tiles yet</p>
@@ -154,7 +138,7 @@ export default function CatalogPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {tiles.map(tile => (
+            {tiles.map((tile: Tile) => (
               <TileCard
                 key={tile.id}
                 id={tile.id}

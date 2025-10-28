@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import useSWR, { mutate } from 'swr'
 import { secureFetch } from '@/lib/api'
+import { swrFetcher, swrConfig } from '@/lib/swr-fetcher'
 import { mockStore } from '@/lib/mockStore'
 import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import UploadButton from '@/components/UploadButton'
 import BackButton from '@/components/BackButton'
+import { TileGridSkeleton } from '@/components/SkeletonLoader'
 import { Camera, Check } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -21,25 +24,16 @@ interface Tile {
 export default function SelectTilePage() {
   useAuth()
   const router = useRouter()
-  const [tiles, setTiles] = useState<Tile[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, error, isLoading } = useSWR('/api/tiles', swrFetcher, swrConfig)
   const [selectedId, setSelectedId] = useState<string | null>(mockStore.getSelectedTile())
 
+  const tiles = data?.tiles || []
+
   useEffect(() => {
-    async function loadTiles() {
-      try {
-        const res = await secureFetch('/api/tiles')
-        const data = await res.json()
-        setTiles(data.tiles || [])
-      } catch (err) {
-        console.error('Failed to fetch tiles', err)
-        toast.error('Failed to load tiles')
-      } finally {
-        setLoading(false)
-      }
+    if (error) {
+      toast.error('Failed to load tiles')
     }
-    loadTiles()
-  }, [])
+  }, [error])
 
   const handleUpload = async (file: File, supabaseUrl: string) => {
     try {
@@ -50,7 +44,7 @@ export default function SelectTilePage() {
       })
       const data = await res.json()
       if (data.tile) {
-        setTiles(prev => [data.tile, ...prev])
+        mutate('/api/tiles')
         setSelectedId(data.tile.id)
         toast.success('Tile uploaded successfully')
       } else {
@@ -63,7 +57,7 @@ export default function SelectTilePage() {
   }
 
   const handleConfirm = () => {
-    const selectedTileObj = tiles.find(t => t.id === selectedId)
+    const selectedTileObj = tiles.find((t: Tile) => t.id === selectedId)
     if (selectedTileObj) {
       sessionStorage.setItem('selectedTile', JSON.stringify(selectedTileObj))
       mockStore.setSelectedTile(selectedId)
@@ -94,10 +88,8 @@ export default function SelectTilePage() {
           <UploadButton onUpload={handleUpload} label="Upload" variant="secondary" />
         </div>
 
-        {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
+        {isLoading ? (
+          <TileGridSkeleton count={8} />
         ) : tiles.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed mb-6">
             <p className="text-gray-500">No tiles yet</p>
@@ -105,7 +97,7 @@ export default function SelectTilePage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-            {tiles.map((tile) => (
+            {tiles.map((tile: Tile) => (
               <button
                 key={tile.id}
                 onClick={() => setSelectedId(tile.id)}
@@ -118,6 +110,8 @@ export default function SelectTilePage() {
                 <img
                   src={tile.image_url}
                   alt={tile.name || 'Tile'}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
                 {selectedId === tile.id && (

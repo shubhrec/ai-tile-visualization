@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import useSWR, { mutate } from 'swr'
 import { secureFetch } from '@/lib/api'
+import { swrFetcher, swrConfig } from '@/lib/swr-fetcher'
 import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import UploadButton from '@/components/UploadButton'
 import BackButton from '@/components/BackButton'
+import { HomeGridSkeleton } from '@/components/SkeletonLoader'
 import { Camera, Check } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -20,11 +23,18 @@ interface Home {
 export default function SelectHomePage() {
   useAuth()
   const router = useRouter()
-  const [homes, setHomes] = useState<Home[]>([])
+  const { data, error, isLoading } = useSWR('/api/homes', swrFetcher, swrConfig)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
+  const homes = data?.homes || []
+
   useEffect(() => {
-    loadHomes()
+    if (error) {
+      toast.error('Failed to load homes')
+    }
+  }, [error])
+
+  useEffect(() => {
     const savedHome = sessionStorage.getItem('selectedHome')
     if (savedHome) {
       try {
@@ -36,17 +46,6 @@ export default function SelectHomePage() {
     }
   }, [])
 
-  async function loadHomes() {
-    try {
-      const res = await secureFetch('/api/homes')
-      const data = await res.json()
-      setHomes(data.homes || [])
-    } catch (err) {
-      console.error('Failed to fetch homes', err)
-      toast.error('Failed to load homes')
-    }
-  }
-
   async function handleUpload(file: File, url: string) {
     try {
       const res = await secureFetch('/api/homes', {
@@ -57,7 +56,7 @@ export default function SelectHomePage() {
       const data = await res.json()
 
       if (data.success && data.home) {
-        setHomes(prev => [data.home, ...prev])
+        mutate('/api/homes')
         setSelectedId(data.home.id)
         toast.success('Home added successfully')
       } else {
@@ -70,7 +69,7 @@ export default function SelectHomePage() {
   }
 
   const handleConfirm = () => {
-    const selectedHome = homes.find(h => h.id === selectedId)
+    const selectedHome = homes.find((h: Home) => h.id === selectedId)
     if (selectedHome) {
       sessionStorage.setItem('selectedHome', JSON.stringify(selectedHome))
       router.back()
@@ -100,14 +99,16 @@ export default function SelectHomePage() {
           <UploadButton onUpload={handleUpload} label="Upload" variant="secondary" bucket="homes" />
         </div>
 
-        {homes.length === 0 ? (
+        {isLoading ? (
+          <HomeGridSkeleton count={8} />
+        ) : homes.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed">
             <p className="text-gray-500">No home images yet</p>
             <p className="text-sm text-gray-400 mt-2">Upload home photos to get started</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-            {homes.map((home) => (
+            {homes.map((home: Home) => (
               <button
                 key={home.id}
                 onClick={() => setSelectedId(home.id)}
@@ -118,6 +119,8 @@ export default function SelectHomePage() {
                 <img
                   src={home.image_url}
                   alt={home.name || 'Home'}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
                 {selectedId === home.id && (

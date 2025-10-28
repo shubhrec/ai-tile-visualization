@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import useSWR, { mutate } from 'swr'
 import { secureFetch } from '@/lib/api'
+import { swrFetcher, swrConfig } from '@/lib/swr-fetcher'
 import { useAuth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
 import ImageModal from '@/components/ImageModal'
@@ -36,9 +38,21 @@ export default function ReferencePage() {
   const router = useRouter()
   const tileId = params.tileId as string
 
-  const [tile, setTile] = useState<Tile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([])
+  const { data: tileData, error: tileError, isLoading: tileLoading } = useSWR(
+    tileId ? `/api/tiles/${tileId}` : null,
+    swrFetcher,
+    swrConfig
+  )
+  const { data: generatedData, isLoading: genLoading } = useSWR(
+    tileId ? `/api/tiles/${tileId}/generated` : null,
+    swrFetcher,
+    swrConfig
+  )
+
+  const tile = tileData?.tile || null
+  const generatedImages = generatedData?.generated || []
+  const isLoading = tileLoading || genLoading
+
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [editModal, setEditModal] = useState(false)
   const [editName, setEditName] = useState('')
@@ -47,51 +61,20 @@ export default function ReferencePage() {
   const [isCreatingChat, setIsCreatingChat] = useState(false)
 
   useEffect(() => {
-    async function fetchTile() {
-      try {
-        const res = await secureFetch(`/api/tiles/${tileId}`)
-
-        if (!res.ok) {
-          toast.error('Tile not found')
-          router.push('/catalog')
-          return
-        }
-
-        const data = await res.json()
-        setTile(data.tile)
-        setEditName(data.tile.name || '')
-        setEditSize(data.tile.size || '')
-        setEditPrice(data.tile.price?.toString() || '')
-        sessionStorage.setItem('selectedTile', JSON.stringify(data.tile))
-
-        const genRes = await secureFetch(`/api/tiles/${tileId}/generated`)
-        const genData = await genRes.json()
-        setGeneratedImages(genData.generated || [])
-      } catch (err) {
-        console.error('Failed to fetch tile', err)
-        toast.error('Failed to load tile')
-        router.push('/catalog')
-      } finally {
-        setLoading(false)
-      }
+    if (tile) {
+      setEditName(tile.name || '')
+      setEditSize(tile.size || '')
+      setEditPrice(tile.price?.toString() || '')
+      sessionStorage.setItem('selectedTile', JSON.stringify(tile))
     }
-    fetchTile()
-  }, [tileId, router])
+  }, [tile])
 
-  const refreshTileData = async () => {
-    try {
-      const res = await secureFetch(`/api/tiles/${tileId}`)
-      if (res.ok) {
-        const data = await res.json()
-        setTile(data.tile)
-        setEditName(data.tile.name || '')
-        setEditSize(data.tile.size || '')
-        setEditPrice(data.tile.price?.toString() || '')
-      }
-    } catch (err) {
-      console.error('Failed to refresh tile', err)
+  useEffect(() => {
+    if (tileError) {
+      toast.error('Tile not found')
+      router.push('/catalog')
     }
-  }
+  }, [tileError, router])
 
   const handleUpdateTile = async () => {
     try {
@@ -113,7 +96,7 @@ export default function ReferencePage() {
       if (data.success) {
         toast.success('Tile updated successfully!')
         setEditModal(false)
-        refreshTileData()
+        mutate(`/api/tiles/${tileId}`)
       } else {
         toast.error('Failed to update tile.')
       }
@@ -168,7 +151,7 @@ export default function ReferencePage() {
   }, [isCreatingChat, router])
 
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
@@ -220,7 +203,7 @@ export default function ReferencePage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {generatedImages.map((item) => (
+              {generatedImages.map((item: GeneratedImage) => (
                 <img
                   key={item.id}
                   src={item.image_url}
