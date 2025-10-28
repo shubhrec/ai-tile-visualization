@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { secureFetch } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import GeneratedImageCard from '@/components/GeneratedImageCard'
-import { ArrowLeft, Image as ImageIcon, Trash2, Check, Loader2, Plus } from 'lucide-react'
+import { ArrowLeft, Image as ImageIcon, Trash2, Check, Loader2, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Chat {
@@ -196,6 +196,42 @@ export default function ChatPage() {
   const handleImageClick = useCallback((image: GeneratedImage) => {
     setViewImage(image)
   }, [])
+
+  const getCurrentImageIndex = useCallback(() => {
+    if (!viewImage) return -1
+    return images.findIndex(img => img.id === viewImage.id)
+  }, [viewImage, images])
+
+  const handlePreviousImage = useCallback(() => {
+    const currentIndex = getCurrentImageIndex()
+    if (currentIndex > 0) {
+      setViewImage(images[currentIndex - 1])
+    }
+  }, [getCurrentImageIndex, images])
+
+  const handleNextImage = useCallback(() => {
+    const currentIndex = getCurrentImageIndex()
+    if (currentIndex >= 0 && currentIndex < images.length - 1) {
+      setViewImage(images[currentIndex + 1])
+    }
+  }, [getCurrentImageIndex, images])
+
+  useEffect(() => {
+    if (!viewImage) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setViewImage(null)
+      } else if (e.key === 'ArrowLeft') {
+        handlePreviousImage()
+      } else if (e.key === 'ArrowRight') {
+        handleNextImage()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [viewImage, handlePreviousImage, handleNextImage])
 
   const handleGenerate = async () => {
     if (!selectedTile || !prompt.trim()) {
@@ -393,29 +429,60 @@ export default function ChatPage() {
         </button>
       </div>
 
-      {viewImage && (
-        <div className="fixed inset-0 bg-black/70 flex flex-col items-center justify-center z-50 p-4">
-          <img
-            src={viewImage.image_url}
-            alt={viewImage.prompt || 'Generated Image'}
-            className="max-h-[80vh] max-w-[90vw] rounded-lg shadow-lg object-contain"
-          />
+      {viewImage && (() => {
+        const currentIndex = getCurrentImageIndex()
+        const hasPrevious = currentIndex > 0
+        const hasNext = currentIndex < images.length - 1
 
-          <div className="mt-4 text-center space-y-1 text-sm text-gray-200">
-            {viewImage.prompt && <p className="italic">"{viewImage.prompt}"</p>}
-            {viewImage.tile_name && (
-              <p>Generated from tile: <span className="font-semibold">{viewImage.tile_name}</span></p>
-            )}
+        return (
+          <div className="fixed inset-0 bg-black/70 flex flex-col items-center justify-center z-50 p-4">
+            <div className="relative flex items-center justify-center w-full h-full">
+              {hasPrevious && (
+                <button
+                  onClick={handlePreviousImage}
+                  className="absolute left-2 sm:left-4 z-10 bg-gradient-to-r from-black/50 to-transparent p-3 sm:p-4 rounded-full text-white hover:bg-black/70 transition-colors"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
+                </button>
+              )}
+
+              <div className="flex flex-col items-center justify-center max-w-full max-h-full">
+                <img
+                  src={viewImage.image_url}
+                  alt={viewImage.prompt || 'Generated Image'}
+                  className="max-h-[80vh] max-w-[90vw] rounded-lg shadow-lg object-contain"
+                />
+
+                <div className="mt-4 text-center space-y-1 text-sm text-gray-200">
+                  {viewImage.prompt && <p className="italic">"{viewImage.prompt}"</p>}
+                  {viewImage.tile_name && (
+                    <p>Generated from tile: <span className="font-semibold">{viewImage.tile_name}</span></p>
+                  )}
+                </div>
+              </div>
+
+              {hasNext && (
+                <button
+                  onClick={handleNextImage}
+                  className="absolute right-2 sm:right-4 z-10 bg-gradient-to-l from-black/50 to-transparent p-3 sm:p-4 rounded-full text-white hover:bg-black/70 transition-colors"
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={() => setViewImage(null)}
+              className="absolute top-4 right-4 text-white text-3xl hover:opacity-80 transition-opacity"
+              aria-label="Close"
+            >
+              ✕
+            </button>
           </div>
-
-          <button
-            onClick={() => setViewImage(null)}
-            className="absolute top-4 right-4 text-white text-3xl"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }
