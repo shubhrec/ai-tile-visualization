@@ -56,10 +56,10 @@ export default function ChatPage() {
   const [generating, setGenerating] = useState(false)
 
   const chat = chatData?.chat || null
-  const images = chatData?.images?.map((img: any) => ({
+  const images = (chatData?.images?.map((img: any) => ({
     ...img,
     tile_name: img.tile_name || (img.tile?.name ?? null),
-  })) || []
+  })) || []).reverse()
 
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null)
   const [selectedHome, setSelectedHome] = useState<Home | null>(null)
