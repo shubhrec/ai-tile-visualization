@@ -7,6 +7,7 @@ import { secureFetch } from '@/lib/api'
 import { swrFetcher, swrConfig } from '@/lib/swr-fetcher'
 import { useAuth } from '@/lib/auth'
 import GeneratedImageCard from '@/components/GeneratedImageCard'
+import ContinueModal from '@/components/ContinueModal'
 import { ArrowLeft, Image as ImageIcon, Trash2, Check, Loader2, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -65,6 +66,8 @@ export default function ChatPage() {
   const [selectedHome, setSelectedHome] = useState<Home | null>(null)
   const [prompt, setPrompt] = useState('')
   const [viewImage, setViewImage] = useState<GeneratedImage | null>(null)
+  const [continueImage, setContinueImage] = useState<GeneratedImage | null>(null)
+  const [continuingGeneration, setContinuingGeneration] = useState(false)
 
   useEffect(() => {
     if (chatError) {
@@ -251,6 +254,41 @@ export default function ChatPage() {
     }
   }
 
+  const handleContinueGenerate = async (tileUrl: string, continuePrompt: string) => {
+    if (!continueImage) return
+
+    setContinuingGeneration(true)
+    try {
+      const mockImageUrl = `https://via.placeholder.com/800x600/667eea/ffffff?text=${encodeURIComponent(continuePrompt.slice(0, 20) || 'Continuation')}`
+
+      const res = await secureFetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          tile_id: selectedTile?.id || continueImage.tile_id,
+          base_image_url: continueImage.image_url,
+          tile_url: tileUrl,
+          prompt: continuePrompt.trim() || 'Continue with new tile',
+          image_url: mockImageUrl,
+        }),
+      })
+
+      if (res.ok) {
+        mutate(`/api/chats/${chatId}`)
+        toast.success('Continuation generated')
+        setContinueImage(null)
+      } else {
+        toast.error('Failed to generate continuation')
+      }
+    } catch (err) {
+      console.error('Continue generate error:', err)
+      toast.error('Failed to generate continuation')
+    } finally {
+      setContinuingGeneration(false)
+    }
+  }
+
   const keptCount = Array.isArray(images)
     ? images.filter(img => img?.kept === true).length
     : 0
@@ -318,6 +356,7 @@ export default function ChatPage() {
                 onKeep={() => handleKeep(image.id)}
                 onDelete={() => handleDelete(image.id)}
                 onAddReference={() => handleAddReference(image.id)}
+                onContinue={() => setContinueImage(image)}
                 canAddReference={!!selectedTile?.id}
               />
             )
@@ -464,6 +503,14 @@ export default function ChatPage() {
           </div>
         )
       })()}
+
+      <ContinueModal
+        isOpen={!!continueImage}
+        baseImageUrl={continueImage?.image_url || ''}
+        onClose={() => setContinueImage(null)}
+        onGenerate={handleContinueGenerate}
+        isGenerating={continuingGeneration}
+      />
     </div>
   )
 }

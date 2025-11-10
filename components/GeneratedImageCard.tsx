@@ -12,6 +12,7 @@ interface GeneratedImageCardProps {
   onKeep: () => void
   onDelete: () => void
   onAddReference: () => void
+  onContinue?: () => void
   canAddReference: boolean
 }
 
@@ -25,6 +26,7 @@ const GeneratedImageCard = memo(function GeneratedImageCard({
   onKeep,
   onDelete,
   onAddReference,
+  onContinue,
   canAddReference
 }: GeneratedImageCardProps) {
   return (
@@ -72,6 +74,15 @@ const GeneratedImageCard = memo(function GeneratedImageCard({
           </button>
         </div>
       </div>
+
+      {onContinue && (
+        <button
+          onClick={onContinue}
+          className="mt-2 w-full px-3 py-2 text-sm font-medium rounded-lg border-2 border-dashed border-blue-300 hover:border-blue-500 hover:bg-blue-50 text-blue-600 transition flex items-center justify-center gap-2"
+        >
+          <span>+</span> Continue on this image
+        </button>
+      )}
     </div>
   )
 })
