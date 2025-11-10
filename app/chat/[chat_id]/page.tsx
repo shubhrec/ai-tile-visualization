@@ -7,7 +7,8 @@ import { secureFetch } from '@/lib/api'
 import { swrFetcher, swrConfig } from '@/lib/swr-fetcher'
 import { useAuth } from '@/lib/auth'
 import GeneratedImageCard from '@/components/GeneratedImageCard'
-import { ArrowLeft, Image as ImageIcon, Trash2, Check, Loader2, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import UploadButton from '@/components/UploadButton'
+import { ArrowLeft, Image as ImageIcon, Trash2, Check, Loader2, Plus, ChevronLeft, ChevronRight, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Chat {
@@ -53,9 +54,11 @@ export default function ChatPage() {
     swrFetcher,
     swrConfig
   )
+  const { data: tilesData } = useSWR('/api/tiles', swrFetcher, swrConfig)
   const [generating, setGenerating] = useState(false)
 
   const chat = chatData?.chat || null
+  // Images are already sorted by backend (oldest first, newest last)
   const images = chatData?.images?.map((img: any) => ({
     ...img,
     tile_name: img.tile_name || (img.tile?.name ?? null),
@@ -65,6 +68,16 @@ export default function ChatPage() {
   const [selectedHome, setSelectedHome] = useState<Home | null>(null)
   const [prompt, setPrompt] = useState('')
   const [viewImage, setViewImage] = useState<GeneratedImage | null>(null)
+
+  // Continuation state
+  const [isContinueOpen, setIsContinueOpen] = useState(false)
+  const [continueBaseImage, setContinueBaseImage] = useState<GeneratedImage | null>(null)
+  const [continueTileUrl, setContinueTileUrl] = useState('')
+  const [continuePrompt, setContinuePrompt] = useState('')
+  const [continueMode, setContinueMode] = useState<'select' | 'upload'>('select')
+  const [selectedContinueTileId, setSelectedContinueTileId] = useState<string | null>(null)
+
+  const tiles = tilesData?.tiles || []
 
   useEffect(() => {
     if (chatError) {
@@ -174,6 +187,71 @@ export default function ChatPage() {
       toast.error('Error adding reference.')
     }
   }, [selectedTile])
+
+  const handleContinue = useCallback((image: GeneratedImage) => {
+    setContinueBaseImage(image)
+    setContinuePrompt('')
+    setContinueTileUrl('')
+    setSelectedContinueTileId(null)
+    setContinueMode('select')
+    setIsContinueOpen(true)
+  }, [])
+
+  const handleGenerateContinuation = async () => {
+    if (!continueBaseImage) {
+      toast.error('No base image selected.')
+      return
+    }
+
+    // Get the tile URL from either selected tile or uploaded tile
+    let tileUrl = continueTileUrl
+    if (continueMode === 'select' && selectedContinueTileId) {
+      const selectedTileObj = tiles.find((t: Tile) => t.id === selectedContinueTileId)
+      if (selectedTileObj) {
+        tileUrl = selectedTileObj.image_url
+      }
+    }
+
+    if (!tileUrl) {
+      toast.error('Please select or upload a tile.')
+      return
+    }
+
+    setGenerating(true)
+    setIsContinueOpen(false)
+
+    try {
+      const res = await secureFetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          tile_id: selectedContinueTileId || selectedTile?.id || null,
+          home_id: selectedHome?.id || null,
+          base_image_url: continueBaseImage.image_url,
+          tile_url: tileUrl,
+          prompt: continuePrompt || 'apply new tile logically',
+        }),
+      })
+
+      if (res.ok) {
+        mutate(`/api/chats/${chatId}`)
+        toast.success('Continuation generated successfully!')
+        setContinueBaseImage(null)
+        setContinueTileUrl('')
+        setContinuePrompt('')
+        setSelectedContinueTileId(null)
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Generation failed')
+      }
+    } catch (err) {
+      console.error('Continuation generation error:', err)
+      toast.error('Error generating continuation')
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   const handleImageClick = useCallback((image: GeneratedImage) => {
     setViewImage(image)
@@ -318,6 +396,7 @@ export default function ChatPage() {
                 onKeep={() => handleKeep(image.id)}
                 onDelete={() => handleDelete(image.id)}
                 onAddReference={() => handleAddReference(image.id)}
+                onContinue={() => handleContinue(image)}
                 canAddReference={!!selectedTile?.id}
               />
             )
@@ -464,6 +543,134 @@ export default function ChatPage() {
           </div>
         )
       })()}
+
+      {isContinueOpen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setIsContinueOpen(false)}>
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold mb-4">Continue on this Image</h2>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">Base Image:</p>
+              {continueBaseImage && (
+                <img
+                  src={continueBaseImage.image_url}
+                  alt="Base"
+                  className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                />
+              )}
+            </div>
+
+            <div className="mb-4">
+              <div className="flex gap-2 mb-3">
+                <button
+                  onClick={() => setContinueMode('select')}
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition ${
+                    continueMode === 'select'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Select Existing Tile
+                </button>
+                <button
+                  onClick={() => setContinueMode('upload')}
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition ${
+                    continueMode === 'upload'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Upload New Tile
+                </button>
+              </div>
+
+              {continueMode === 'select' ? (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Select a tile:</p>
+                  {tiles.length === 0 ? (
+                    <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed">
+                      <p className="text-gray-500 text-sm">No tiles available</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+                      {tiles.map((tile: Tile) => (
+                        <button
+                          key={tile.id}
+                          onClick={() => setSelectedContinueTileId(tile.id)}
+                          className={`relative aspect-square rounded-lg overflow-hidden bg-gray-100 transition-all ${
+                            selectedContinueTileId === tile.id
+                              ? 'ring-4 ring-blue-500'
+                              : 'hover:ring-2 hover:ring-gray-300'
+                          }`}
+                        >
+                          <img
+                            src={tile.image_url}
+                            alt={tile.name || 'Tile'}
+                            loading="lazy"
+                            className="w-full h-full object-cover"
+                          />
+                          {selectedContinueTileId === tile.id && (
+                            <div className="absolute top-2 right-2 bg-blue-600 text-white p-1.5 rounded-full">
+                              <Check className="w-4 h-4" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Upload a new tile:</p>
+                  <UploadButton
+                    onUpload={(file, url) => setContinueTileUrl(url)}
+                    bucket="tiles"
+                    label="Upload Tile"
+                    variant="secondary"
+                  />
+                  {continueTileUrl && (
+                    <div className="mt-3">
+                      <p className="text-sm text-gray-600 mb-2">Uploaded tile:</p>
+                      <img
+                        src={continueTileUrl}
+                        alt="Uploaded tile"
+                        className="w-24 h-24 object-cover rounded-lg border border-gray-200"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">Prompt (optional):</p>
+              <textarea
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-600"
+                placeholder="Describe where to apply the new tile (e.g. 'on wall', 'on backsplash')"
+                value={continuePrompt}
+                onChange={(e) => setContinuePrompt(e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsContinueOpen(false)}
+                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleGenerateContinuation}
+                disabled={(continueMode === 'select' && !selectedContinueTileId) || (continueMode === 'upload' && !continueTileUrl)}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Generate Continuation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
