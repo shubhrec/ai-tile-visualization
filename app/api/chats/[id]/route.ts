@@ -58,7 +58,7 @@ export async function GET(
       .from('generated_images')
       .select('*')
       .eq('chat_id', chatId)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
 
     if (imagesError) {
       console.error('Error fetching generated images:', imagesError)
